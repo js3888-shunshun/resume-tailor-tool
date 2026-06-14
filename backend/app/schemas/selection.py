@@ -29,6 +29,11 @@ class SelectedExperience(BaseModel):
     # (category fit + how many distinct JD keywords it touches across its bullets).
     score: float = 0.0
     matched_keywords: List[str] = Field(default_factory=list)
+    # Which JD categories this experience matched, e.g. "MLE (primary)", "AI".
+    matched_categories: List[str] = Field(default_factory=list)
+    # Score breakdown for transparent "why this score" display.
+    category_score: float = 0.0
+    keyword_score: float = 0.0
     selected_bullets: List[SelectedBullet] = Field(default_factory=list)
 
 
@@ -37,3 +42,8 @@ class SelectionResult(BaseModel):
     selected_experiences: List[SelectedExperience] = Field(default_factory=list)
     selected_projects: List[SelectedExperience] = Field(default_factory=list)
     selected_skills: List[str] = Field(default_factory=list)
+    # ALL category-matching candidates, ranked, so the UI can let the user
+    # add/swap experiences the auto-selection didn't pick. The default
+    # `selected_*` lists are simply the top N of these.
+    ranked_experiences: List[SelectedExperience] = Field(default_factory=list)
+    ranked_projects: List[SelectedExperience] = Field(default_factory=list)

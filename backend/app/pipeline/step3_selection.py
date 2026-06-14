@@ -38,43 +38,37 @@ def _categories_of_interest(jd: JDProfile) -> set:
     return {jd.primary_category, *jd.secondary_categories}
 
 
-def _select_top(
+def _to_selected(item: Experience | Project, es) -> SelectedExperience:
+    return SelectedExperience(
+        source_id=item.id,
+        score=es.score,
+        matched_keywords=es.matched_keywords,
+        matched_categories=es.matched_categories,
+        category_score=es.category_score,
+        keyword_score=es.keyword_score,
+        # Keep the whole experience: all bullets travel together.
+        selected_bullets=[
+            SelectedBullet(
+                source_bullet_id=b.id,
+                original_text=b.text,
+                matched_keywords=es.bullet_matches.get(b.id, []),
+            )
+            for b in item.bullets
+        ],
+    )
+
+
+def _rank(
     items: Sequence[Experience | Project],
     jd: JDProfile,
     scorer: ExperienceScorer,
-    target: int,
 ) -> List[SelectedExperience]:
-    """Filter by category intersection, score each item whole, keep the top `target`."""
+    """Filter by category intersection and rank every candidate, best first."""
     cats = _categories_of_interest(jd)
-    scored: List[tuple] = []
-    for item in items:
-        if not (set(item.categories) & cats):
-            continue
-        es = scorer(item, jd)
-        scored.append((item, es))
-
-    # Best experiences first; tiebreak by bullet count (richer experience first).
+    scored = [(item, scorer(item, jd)) for item in items if set(item.categories) & cats]
+    # Best first; tiebreak by bullet count (richer experience first).
     scored.sort(key=lambda pair: (pair[1].score, len(pair[0].bullets)), reverse=True)
-
-    selected: List[SelectedExperience] = []
-    for item, es in scored[: max(0, target)]:
-        selected.append(
-            SelectedExperience(
-                source_id=item.id,
-                score=es.score,
-                matched_keywords=es.matched_keywords,
-                # Keep the whole experience: all bullets travel together.
-                selected_bullets=[
-                    SelectedBullet(
-                        source_bullet_id=b.id,
-                        original_text=b.text,
-                        matched_keywords=es.bullet_matches.get(b.id, []),
-                    )
-                    for b in item.bullets
-                ],
-            )
-        )
-    return selected
+    return [_to_selected(item, es) for item, es in scored]
 
 
 def _select_skills(skills: Sequence[Skill], jd: JDProfile) -> List[str]:
@@ -95,20 +89,23 @@ def select_experiences(
     scorer: ExperienceScorer = score_experience,
 ) -> SelectionResult:
     """Run Step 3: pick whole experiences/projects by section-count targets."""
-    exp_groups = _select_top(library.experiences, jd, scorer, target_experiences)
-    proj_groups = _select_top(library.projects, jd, scorer, target_projects)
+    ranked_exp = _rank(library.experiences, jd, scorer)
+    ranked_proj = _rank(library.projects, jd, scorer)
 
     result = SelectionResult(
         selected_education=_select_education(library.education),
-        selected_experiences=exp_groups,
-        selected_projects=proj_groups,
+        selected_experiences=ranked_exp[: max(0, target_experiences)],
+        selected_projects=ranked_proj[: max(0, target_projects)],
         selected_skills=_select_skills(library.skills, jd),
+        ranked_experiences=ranked_exp,
+        ranked_projects=ranked_proj,
     )
     logger.info(
-        "Selection: %d/%d experiences, %d/%d projects, %d skills",
-        len(exp_groups),
+        "Selection: %d/%d experiences (of %d candidates), %d/%d projects, %d skills",
+        len(result.selected_experiences),
         target_experiences,
-        len(proj_groups),
+        len(ranked_exp),
+        len(result.selected_projects),
         target_projects,
         len(result.selected_skills),
     )

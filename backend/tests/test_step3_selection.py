@@ -136,6 +136,35 @@ def test_skills_filtered_by_category():
     assert "Airflow" not in res.selected_skills
 
 
+def test_score_breakdown_and_categories_exposed():
+    res = select_experiences(_jd_full(), _library(), target_experiences=5)
+    strong = next(g for g in res.selected_experiences if g.source_id == "exp_strong")
+    # category_score + keyword_score == total score (transparent breakdown).
+    assert strong.category_score + strong.keyword_score == strong.score
+    assert "MLE (primary)" in strong.matched_categories
+    assert "AI" in strong.matched_categories
+
+
+def test_category_only_match_has_no_keywords():
+    # exp_weak matches MLE category but its bullet ("wrote docs") hits no JD keyword.
+    res = select_experiences(_jd_full(), _library(), target_experiences=5)
+    weak = next(g for g in res.selected_experiences if g.source_id == "exp_weak")
+    assert weak.matched_keywords == []          # explains "no tags below"
+    assert weak.matched_categories == ["MLE (primary)"]
+    assert weak.keyword_score == 0.0
+    assert weak.score == weak.category_score     # selected purely on category fit
+
+
+def test_ranked_includes_all_candidates_for_manual_swap():
+    # target keeps 1, but ranked exposes all category-matching candidates so the
+    # UI can let the user add/replace.
+    res = select_experiences(_jd_full(), _library(), target_experiences=1)
+    assert len(res.selected_experiences) == 1
+    ranked_ids = {g.source_id for g in res.ranked_experiences}
+    assert {"exp_strong", "exp_weak"} <= ranked_ids
+    assert "exp_off" not in ranked_ids  # off-category still excluded entirely
+
+
 def test_runs_on_sample_library():
     jd = _jd(primary_category="MLE", secondary_categories=["AI", "DS"],
              key_skills=["Python", "PyTorch"], keywords_for_highlight=["PyTorch", "RAG", "Docker"])

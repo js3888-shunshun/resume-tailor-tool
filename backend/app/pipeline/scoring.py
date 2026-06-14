@@ -28,6 +28,11 @@ class ExperienceScore:
     score: float
     # Distinct JD keywords this experience touches across all its bullets.
     matched_keywords: List[str] = field(default_factory=list)
+    # Which JD categories this experience matched, e.g. "MLE (primary)", "AI".
+    matched_categories: List[str] = field(default_factory=list)
+    # Breakdown of the total score, for transparent "why this score" UI.
+    category_score: float = 0.0
+    keyword_score: float = 0.0
     # bullet id -> keywords it matched (kept for later highlighting in Step 4).
     bullet_matches: dict = field(default_factory=dict)
 
@@ -107,9 +112,14 @@ def score_experience(
     """
     cats = set(item.categories)
     cat_score = 0.0
+    matched_categories: List[str] = []
     if jd.primary_category in cats:
         cat_score += primary_weight
-    cat_score += secondary_weight * len(cats & set(jd.secondary_categories))
+        matched_categories.append(f"{jd.primary_category.value} (primary)")
+    for sec in jd.secondary_categories:
+        if sec in cats:
+            cat_score += secondary_weight
+            matched_categories.append(sec.value)
 
     highlight_set = {k.lower() for k in jd.keywords_for_highlight}
     matched: List[str] = []
@@ -124,4 +134,11 @@ def score_experience(
                 matched.append(kw)
 
     kw_score = sum(highlight_weight if m.lower() in highlight_set else skill_weight for m in matched)
-    return ExperienceScore(score=cat_score + kw_score, matched_keywords=matched, bullet_matches=bullet_matches)
+    return ExperienceScore(
+        score=cat_score + kw_score,
+        matched_keywords=matched,
+        matched_categories=matched_categories,
+        category_score=cat_score,
+        keyword_score=kw_score,
+        bullet_matches=bullet_matches,
+    )

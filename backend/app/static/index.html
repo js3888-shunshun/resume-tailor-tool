@@ -135,6 +135,13 @@
     .score-badge { flex:0 0 auto; min-width:34px; text-align:center; font-size:11px; font-weight:700; color:var(--accent); background: var(--accent-soft); border:1px solid var(--accent-bd); border-radius:6px; padding:2px 6px; }
     .score-badge.zero { color: var(--muted); background: transparent; border-color: var(--border); }
     .bullet-body { flex:1; } .bullet-text { font-size:13px; } .bullet-kw { margin-top:4px; }
+    .why { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:2px 0 8px; }
+    .why-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    select.edit { background:#fff; max-width:360px; }
+    .remove-link { font-size:11px; color:var(--err); cursor:pointer; font-weight:600; }
+    .remove-link:hover { text-decoration:underline; }
+    .sel-kind { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); font-weight:700; margin:14px 0 8px; }
+    .sel-kind:first-child { margin-top:0; }
   </style>
 </head>
 <body>
@@ -227,7 +234,7 @@
             <p class="field-title" style="margin:0;">Selected experiences (Step 3)</p>
             <span class="muted" id="sel-summary" style="font-size:12px;"></span>
           </div>
-          <div class="hint" style="margin-bottom:10px;">Whole experiences ranked by category fit + keyword breadth. The score is per experience; all its bullets are kept. Chips = JD keywords the experience touches.</div>
+          <div class="hint" style="margin-bottom:10px;">Whole experiences ranked by <b>category fit + keyword breadth</b> (hover the score for the split). "why" shows which JD categories &amp; keywords it matched. You can <b>remove</b> any pick or <b>add</b> another from your library.</div>
           <div id="sel-body"></div>
           <details class="raw"><summary class="muted">Raw JSON</summary><pre id="sel-raw"></pre></details>
         </div>
@@ -501,27 +508,63 @@ versions in production is required. Fast-paced startup environment.`;
         (m.experiences || []).forEach((e) => { MATERIALS_MAP[e.id] = { title: e.title, org: e.organization, kind: 'Experience' }; });
         (m.projects || []).forEach((p) => { MATERIALS_MAP[p.id] = { title: p.title, org: '', kind: 'Project' }; }); } catch (e) {}
     }
-    function selBlock(g, kindLabel) {
+    // Working selection the user can edit (add / remove), plus all ranked candidates.
+    let RANKED = { experiences: [], projects: [] };
+    let WORKING = { experiences: [], projects: [], skills: [] };
+
+    function selBlock(g, kind) {
       const meta = MATERIALS_MAP[g.source_id] || { title: g.source_id, org: '' };
+      const remove = h('span', { class: 'remove-link', onclick: () => {
+        WORKING[kind] = WORKING[kind].filter((x) => x.source_id !== g.source_id); renderWorking(); } }, 'remove');
+      const scoreTip = `category ${g.category_score} + keywords ${g.keyword_score}`;
       const head = h('div', { class: 'exp-head' },
-        h('span', { class: 'exp-title' }, meta.title || g.source_id, kindLabel ? h('span', { class: 'tag' }, kindLabel) : null),
-        h('span', { class: 'score-badge ' + (g.score > 0 ? '' : 'zero') }, 'score ' + g.score));
+        h('span', { class: 'exp-title' }, meta.title || g.source_id,
+          h('span', { class: 'tag' }, kind === 'experiences' ? 'Experience' : 'Project')),
+        h('div', { style: 'display:flex; gap:12px; align-items:center;' },
+          h('span', { class: 'score-badge ' + (g.score > 0 ? '' : 'zero'), title: scoreTip }, 'score ' + g.score),
+          remove));
       const sub = meta.org ? h('div', { class: 'exp-meta', style: 'margin:-2px 0 6px;' }, meta.org) : null;
+      const catChips = (g.matched_categories || []).map((c) => h('span', { class: 'chip cat' }, c));
+      const kwChips = (g.matched_keywords || []).map((k) => h('span', { class: 'chip kw' }, k));
+      const why = h('div', { class: 'why' }, h('span', { class: 'why-label' }, 'why'),
+        catChips.length ? h('span', { class: 'chips' }, catChips) : null,
+        kwChips.length ? h('span', { class: 'chips' }, kwChips)
+          : h('span', { class: 'muted', style: 'font-size:11px;' }, '(matched on category only — no JD keyword in the text)'));
       const ul = h('ul', { class: 'lv-bullets' }, (g.selected_bullets || []).map((b) => h('li', {}, b.original_text || b.source_bullet_id)));
-      const kw = (g.matched_keywords || []).length
-        ? h('div', { class: 'chips', style: 'margin-top:8px;' }, g.matched_keywords.map((k) => h('span', { class: 'chip kw' }, k)))
-        : null;
-      return h('div', { class: 'exp-block' }, head, sub, ul, kw);
+      return h('div', { class: 'exp-block' }, head, sub, why, ul);
     }
-    function renderSelection(sel) {
-      const exps = sel.selected_experiences || [], projs = sel.selected_projects || [];
+
+    function addControl(kind) {
+      const present = new Set(WORKING[kind].map((x) => x.source_id));
+      const options = RANKED[kind].filter((x) => !present.has(x.source_id));
+      if (!options.length) return null;
+      const sel = h('select', { class: 'edit' },
+        h('option', { value: '' }, `+ add ${kind === 'experiences' ? 'experience' : 'project'}…`),
+        options.map((o) => { const m = MATERIALS_MAP[o.source_id] || { title: o.source_id };
+          return h('option', { value: o.source_id }, `${m.title}  ·  score ${o.score}${o.matched_categories && o.matched_categories.length ? '  ·  ' + o.matched_categories.join(', ') : ''}`); }));
+      sel.addEventListener('change', () => { const id = sel.value; if (!id) return;
+        const item = RANKED[kind].find((x) => x.source_id === id); if (item) { WORKING[kind].push(item); renderWorking(); } });
+      return h('div', { class: 'row', style: 'margin-top:6px;' }, sel);
+    }
+
+    function renderWorking() {
       const body = $('sel-body'); body.innerHTML = '';
-      let bulletN = 0;
-      exps.forEach((g) => { bulletN += (g.selected_bullets || []).length; body.appendChild(selBlock(g, 'Experience')); });
-      projs.forEach((g) => { bulletN += (g.selected_bullets || []).length; body.appendChild(selBlock(g, 'Project')); });
-      $('sel-summary').textContent = `${exps.length} experiences · ${projs.length} projects · ${bulletN} bullets · ${(sel.selected_skills || []).length} skills`;
+      body.appendChild(h('div', { class: 'sel-kind' }, `Experiences (${WORKING.experiences.length})`));
+      WORKING.experiences.forEach((g) => body.appendChild(selBlock(g, 'experiences')));
+      const ae = addControl('experiences'); if (ae) body.appendChild(ae);
+      body.appendChild(h('div', { class: 'sel-kind' }, `Projects (${WORKING.projects.length})`));
+      WORKING.projects.forEach((g) => body.appendChild(selBlock(g, 'projects')));
+      const ap = addControl('projects'); if (ap) body.appendChild(ap);
+      const bn = WORKING.experiences.concat(WORKING.projects).reduce((n, g) => n + (g.selected_bullets || []).length, 0);
+      $('sel-summary').textContent = `${WORKING.experiences.length} experiences · ${WORKING.projects.length} projects · ${bn} bullets`;
+    }
+
+    function renderSelection(sel) {
+      RANKED = { experiences: sel.ranked_experiences || [], projects: sel.ranked_projects || [] };
+      WORKING = { experiences: [...(sel.selected_experiences || [])], projects: [...(sel.selected_projects || [])], skills: sel.selected_skills || [] };
+      renderWorking();
       $('sel-raw').textContent = JSON.stringify(sel, null, 2);
-      $('selection').style.display = (exps.length || projs.length) ? 'block' : 'none';
+      $('selection').style.display = 'block';
     }
     async function analyze() {
       const jd = $('jd').value.trim(); $('error').textContent = '';
