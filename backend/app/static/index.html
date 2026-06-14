@@ -147,16 +147,16 @@
       background:var(--accent-soft); border:1px solid var(--accent-bd); border-radius:10px; padding:13px 16px; margin:14px 0 4px; }
     .cta b { color:var(--accent); }
     .cta button { white-space:nowrap; font-size:15px; padding:11px 20px; }
-    .rw-entry { border:1px solid var(--border); border-radius:10px; padding:10px 13px; margin-bottom:10px; }
-    .rw-title { font-weight:600; font-size:14px; margin-bottom:4px; }
-    .rw-bullet { padding:8px 0; border-top:1px solid var(--border); }
-    .rw-bullet:first-of-type { border-top:0; }
-    .rw-before { font-size:12px; color:var(--muted); }
-    .rw-before b, .rw-after b { font-weight:700; font-style:normal; }
-    .rw-after { font-size:13.5px; margin-top:3px; }
-    .rw-after .lab { color:var(--accent); font-weight:700; }
-    .rw-before .lab { color:var(--muted); font-weight:700; }
-    .rw-unchanged { font-size:11px; color:var(--muted); font-style:italic; margin-top:2px; }
+    .rw-entry { border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+    .rw-title { font-weight:600; font-size:14px; margin-bottom:8px; }
+    .rw-count { font-weight:400; font-size:12px; color:var(--muted); }
+    .rw-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:720px){ .rw-cols { grid-template-columns:1fr; } }
+    .rw-collabel { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; margin-bottom:4px; }
+    .rw-collabel.after { color:var(--accent); }
+    .rw-col ul { margin:0; padding-left:18px; }
+    .rw-col li { font-size:12.5px; margin-bottom:4px; line-height:1.45; }
+    .rw-old li { color:var(--muted); }
   </style>
 </head>
 <body>
@@ -617,24 +617,25 @@ versions in production is required. Fast-paced startup environment.`;
     }
     function renderRewrite(data) {
       const groups = [...(data.selected_experiences || []), ...(data.selected_projects || [])];
-      const body = $('rw-body'); body.innerHTML = ''; let n = 0, changed = 0;
+      const body = $('rw-body'); body.innerHTML = ''; let beforeN = 0, afterN = 0;
       groups.forEach((g) => {
         const meta = MATERIALS_MAP[g.source_id] || { title: g.source_id };
-        const block = h('div', { class: 'rw-entry' }, h('div', { class: 'rw-title' }, meta.title || g.source_id));
-        (g.selected_bullets || []).forEach((b) => {
-          n++;
-          const after = b.rewritten_text || b.original_text || '';
-          const isChanged = after.trim() !== (b.original_text || '').trim();
-          if (isChanged) changed++;
-          block.appendChild(h('div', { class: 'rw-bullet' },
-            h('div', { class: 'rw-before' }, h('span', { class: 'lab' }, 'before  '), b.original_text || ''),
-            h('div', { class: 'rw-after' }, h('span', { class: 'lab' }, 'after  '), after),
-            (b.matched_keywords || []).length ? h('div', { class: 'chips', style: 'margin-top:5px;' }, b.matched_keywords.map((k) => h('span', { class: 'chip kw' }, k))) : null,
-            !isChanged ? h('div', { class: 'rw-unchanged' }, 'unchanged') : null));
-        });
+        const before = (g.selected_bullets || []).map((b) => b.original_text || '');
+        const after = (g.rewritten_bullets || []).map((b) => ({ text: b.rewritten_text || '', kw: b.matched_keywords || [] }));
+        beforeN += before.length; afterN += after.length;
+        const kwAll = [...new Set(after.flatMap((a) => a.kw))];
+        const block = h('div', { class: 'rw-entry' },
+          h('div', { class: 'rw-title' }, meta.title || g.source_id,
+            h('span', { class: 'rw-count' }, `   ${before.length} → ${after.length} bullets`)),
+          h('div', { class: 'rw-cols' },
+            h('div', { class: 'rw-col' }, h('div', { class: 'rw-collabel' }, 'Before'),
+              h('ul', { class: 'rw-old' }, before.map((t) => h('li', {}, t)))),
+            h('div', { class: 'rw-col' }, h('div', { class: 'rw-collabel after' }, 'After — tailored to JD'),
+              h('ul', {}, after.map((a) => h('li', {}, a.text))))),
+          kwAll.length ? h('div', { class: 'chips', style: 'margin-top:10px;' }, kwAll.map((k) => h('span', { class: 'chip kw' }, k))) : null);
         body.appendChild(block);
       });
-      $('rw-summary').textContent = `${groups.length} experiences · ${n} bullets · ${changed} reworded`;
+      $('rw-summary').textContent = `${groups.length} experiences · ${beforeN} → ${afterN} bullets`;
       $('rw-raw').textContent = JSON.stringify(data, null, 2);
       $('rewrite').style.display = 'block';
       $('rewrite').scrollIntoView({ behavior: 'smooth', block: 'start' });

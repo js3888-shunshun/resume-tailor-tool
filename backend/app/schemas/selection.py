@@ -35,6 +35,10 @@ class SelectedExperience(BaseModel):
     category_score: float = 0.0
     keyword_score: float = 0.0
     selected_bullets: List[SelectedBullet] = Field(default_factory=list)
+    # Step 4 output: the experience rewritten AS A WHOLE for the JD (may have a
+    # different number of bullets than the original — relevant points amplified,
+    # weak ones condensed/dropped). Each carries the JD keywords it surfaces.
+    rewritten_bullets: List[SelectedBullet] = Field(default_factory=list)
 
 
 class SelectionResult(BaseModel):

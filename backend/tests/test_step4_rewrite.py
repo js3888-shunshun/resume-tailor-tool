@@ -1,4 +1,4 @@
-"""M4 tests: bullet rewriting with an injected mock LLM responder."""
+"""M4 tests: whole-experience rewriting with an injected mock LLM responder."""
 
 from __future__ import annotations
 
@@ -18,56 +18,67 @@ def _jd():
     })
 
 
-def _exp(bullets):
-    return SelectedExperience(source_id="exp_001",
+def _exp(source_id, bullets):
+    return SelectedExperience(source_id=source_id,
                               selected_bullets=[SelectedBullet(source_bullet_id=bid, original_text=txt) for bid, txt in bullets])
 
 
 def _mock(array):
-    text = json.dumps(array)
-    return LLMClient(responder=lambda system, user: text)
+    return LLMClient(responder=lambda system, user: json.dumps(array))
 
 
-def test_rewrite_fills_text_and_keywords():
-    exp = _exp([("m1", "Built models in python"), ("m2", "Deployed services")])
-    client = _mock([
-        {"id": "b0", "rewritten_text": "Trained PyTorch models", "matched_keywords": ["PyTorch"]},
-        {"id": "b1", "rewritten_text": "Deployed services on Kubernetes", "matched_keywords": ["Kubernetes"]},
-    ])
+def test_whole_experience_rewrite_can_change_bullet_count():
+    exp = _exp("exp_001", [("m1", "did ml stuff"), ("m2", "minor filler task"), ("m3", "another minor thing")])
+    # Model condenses 3 bullets -> 2 tailored bullets.
+    client = _mock([{"id": "e0", "bullets": [
+        {"text": "Built PyTorch models in production", "matched_keywords": ["PyTorch"]},
+        {"text": "Deployed services on Kubernetes", "matched_keywords": ["Kubernetes"]},
+    ]}])
     exps, _ = rewrite_selected(_jd(), [exp], [], client=client)
-    bullets = exps[0].selected_bullets
-    assert bullets[0].rewritten_text == "Trained PyTorch models"
-    assert bullets[0].matched_keywords == ["PyTorch"]
-    assert bullets[1].rewritten_text == "Deployed services on Kubernetes"
+    rb = exps[0].rewritten_bullets
+    assert len(rb) == 2  # fewer than the 3 originals
+    assert rb[0].rewritten_text == "Built PyTorch models in production"
+    assert rb[0].matched_keywords == ["PyTorch"]
+    # Originals preserved for before -> after display.
+    assert len(exps[0].selected_bullets) == 3
 
 
-def test_rewrite_batches_experiences_and_projects_with_global_ids():
-    exp = _exp([("m1", "a")])
-    proj = SelectedExperience(source_id="proj_001",
-                              selected_bullets=[SelectedBullet(source_bullet_id="p1", original_text="b")])
-    # b0 = experience bullet, b1 = project bullet (global indexing across both lists)
+def test_batches_experiences_and_projects_with_ids():
+    exp = _exp("exp_001", [("m1", "a")])
+    proj = _exp("proj_001", [("p1", "b")])
     client = _mock([
-        {"id": "b0", "rewritten_text": "A rewritten", "matched_keywords": []},
-        {"id": "b1", "rewritten_text": "B rewritten", "matched_keywords": []},
+        {"id": "e0", "bullets": [{"text": "Exp rewritten", "matched_keywords": []}]},
+        {"id": "e1", "bullets": [{"text": "Proj rewritten", "matched_keywords": []}]},
     ])
     exps, projs = rewrite_selected(_jd(), [exp], [proj], client=client)
-    assert exps[0].selected_bullets[0].rewritten_text == "A rewritten"
-    assert projs[0].selected_bullets[0].rewritten_text == "B rewritten"
+    assert exps[0].rewritten_bullets[0].rewritten_text == "Exp rewritten"
+    assert projs[0].rewritten_bullets[0].rewritten_text == "Proj rewritten"
 
 
-def test_missing_item_falls_back_to_original():
-    exp = _exp([("m1", "original text"), ("m2", "second")])
-    client = _mock([{"id": "b0", "rewritten_text": "only first", "matched_keywords": []}])
+def test_missing_experience_falls_back_to_originals():
+    exp = _exp("exp_001", [("m1", "keep me"), ("m2", "and me")])
+    client = _mock([])  # model returned nothing for e0
     exps, _ = rewrite_selected(_jd(), [exp], [], client=client)
-    # b1 had no response -> keep original, nothing dropped.
-    assert exps[0].selected_bullets[1].rewritten_text == "second"
+    texts = [b.rewritten_text for b in exps[0].rewritten_bullets]
+    assert texts == ["keep me", "and me"]  # nothing dropped
+
+
+def test_uses_context_titles(monkeypatch):
+    exp = _exp("exp_001", [("m1", "a")])
+    captured = {}
+    def responder(system, user):
+        captured["user"] = user
+        return json.dumps([{"id": "e0", "bullets": [{"text": "x", "matched_keywords": []}]}])
+    client = LLMClient(responder=responder)
+    rewrite_selected(_jd(), [exp], [], context={"exp_001": {"title": "ML Engineer Intern", "organization": "BigCo"}}, client=client)
+    assert "ML Engineer Intern" in captured["user"]
 
 
 def test_tolerates_dict_wrapped_array():
-    exp = _exp([("m1", "a")])
-    client = _mock({"bullets": [{"id": "b0", "rewritten_text": "wrapped ok", "matched_keywords": []}]})
+    exp = _exp("exp_001", [("m1", "a")])
+    client = _mock({"experiences": [{"id": "e0", "bullets": [{"text": "wrapped ok", "matched_keywords": []}]}]})
     exps, _ = rewrite_selected(_jd(), [exp], [], client=client)
-    assert exps[0].selected_bullets[0].rewritten_text == "wrapped ok"
+    assert exps[0].rewritten_bullets[0].rewritten_text == "wrapped ok"
 
 
 def test_no_bullets_noop():
@@ -76,6 +87,6 @@ def test_no_bullets_noop():
 
 
 def test_missing_key_raises():
-    exp = _exp([("m1", "a")])
+    exp = _exp("exp_001", [("m1", "a")])
     with pytest.raises(LLMError):
         rewrite_selected(_jd(), [exp], [], client=LLMClient(api_key="", responder=None))

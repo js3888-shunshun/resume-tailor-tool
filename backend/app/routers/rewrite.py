@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from ..llm import LLMError
+from ..materials_store import load_materials
 from ..pipeline.step4_rewrite import rewrite_selected
 from ..schemas import JDProfile, SelectedExperience
 
@@ -30,11 +31,28 @@ class RewriteResult(BaseModel):
     selected_projects: List[SelectedExperience] = Field(default_factory=list)
 
 
+def _title_context() -> dict:
+    """Map source_id -> {title, organization} from the saved library for prompt context."""
+    try:
+        lib = load_materials()
+    except Exception:  # noqa: BLE001
+        return {}
+    ctx: dict = {}
+    for e in lib.experiences:
+        ctx[e.id] = {"title": e.title, "organization": e.organization}
+    for p in lib.projects:
+        ctx[p.id] = {"title": p.title, "organization": ""}
+    return ctx
+
+
 @router.post("/rewrite", response_model=RewriteResult)
 def rewrite(req: RewriteRequest) -> RewriteResult:
     try:
         exps, projs = rewrite_selected(
-            req.jd_profile, req.selected_experiences, req.selected_projects
+            req.jd_profile,
+            req.selected_experiences,
+            req.selected_projects,
+            context=_title_context(),
         )
     except LLMError as e:
         raise HTTPException(status_code=503, detail=str(e))

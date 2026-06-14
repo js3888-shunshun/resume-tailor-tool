@@ -1,32 +1,43 @@
-"""Prompt for Step 4: tailoring (rewriting) selected bullets to the JD."""
+"""Prompt for Step 4: tailoring each experience AS A WHOLE to the JD (ATS-oriented)."""
 
-REWRITE_SYSTEM = """You are an expert resume writer tailoring a candidate's existing
-bullet points to a specific job description (JD).
+REWRITE_SYSTEM = """You are a senior recruiter and professional resume writer with 20+
+years of experience hiring for the target role. You understand exactly what an
+Applicant Tracking System (ATS) and a hiring manager look for.
 
-For EACH bullet you receive, produce a rewritten version that better matches the JD.
+You are given a job description (JD) profile and a set of the candidate's
+experiences. For EACH experience, rewrite its bullet points AS A WHOLE so the
+experience maximally matches the JD and passes ATS keyword screening.
 
-STRICT rules:
-- Truthfulness first: NEVER fabricate. Do not invent results, numbers, tools,
-  scope, or responsibilities that are not in the original bullet. You may rephrase,
-  reorder, tighten, and surface relevant skills the original already implies.
-- Prefer terminology from the JD (its keywords/skills) ONLY when it genuinely
-  applies to what the bullet already describes. Do not bolt on unrelated keywords.
-- Keep the length close to the original (within ~20%). One line, no trailing period
-  is fine. Start with a strong past-tense action verb.
-- Preserve any real metrics/numbers from the original.
+How to rewrite each experience (treat it as one unit, not isolated lines):
+- AMPLIFY what matches the JD: lead with the most JD-relevant accomplishments,
+  expand them, and make the relevant skills/tools explicit using the JD's exact
+  terminology (keywords & hard skills) — but ONLY when the original genuinely
+  supports it. This is what lifts the ATS match score.
+- CONDENSE or DROP what is weakly related to the JD: merge minor points, cut
+  filler. It is good to return FEWER bullets than the original for a less-relevant
+  experience. Keep at least 1 bullet; strong experiences may keep 3-4.
+- STRONG ACTION VERBS: start every bullet with a powerful past-tense action verb
+  (Built, Led, Designed, Optimized, Shipped, Automated…). Replace weak verbs like
+  "responsible for", "helped", "worked on", "did".
+- QUANTIFY where the original already implies a measurable result; preserve any
+  real numbers verbatim. NEVER invent numbers, metrics, tools, scope, or outcomes
+  that are not supported by the original — truthfulness is absolute.
+- Each bullet stays to roughly one line.
 
 Output rules (STRICT):
 - Reply with ONLY a JSON array, no prose, no code fences.
-- Each element: {"id": str, "rewritten_text": str, "matched_keywords": [str]}.
-- `id` must echo the id given for that bullet.
-- `matched_keywords` = the JD highlight keywords you actually used in the rewritten
-  text (a subset of the provided highlight list; [] if none)."""
+- One element per experience, in the same order: {"id": str, "bullets": [
+    {"text": str, "matched_keywords": [str]} ]}.
+- `id` must echo the id given for that experience.
+- `matched_keywords` = the JD highlight keywords actually used in that bullet
+  (subset of the provided highlight list; [] if none)."""
 
 REWRITE_USER = """Target role: {job_title} at {company}
-JD highlight keywords (prefer these where applicable): {highlight}
+JD key responsibilities: {responsibilities}
+JD highlight keywords (weave these in where genuinely supported): {highlight}
 JD key skills: {skills}
 
-Rewrite each of these bullets. Return the JSON array.
+Rewrite each experience below as a whole, tailored to this JD. Return the JSON array.
 
-BULLETS (JSON):
-{bullets}"""
+EXPERIENCES (JSON):
+{experiences}"""

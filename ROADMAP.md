@@ -127,21 +127,26 @@ so selection runs on the user's real experiences instead of sample data.
   tested module (6 tests: bullet-append, new-item, skill-cat-union, edu-dedup,
   id-renumber, no-base-mutation). pytest 31/31.
 
-### M4 — Content rewriting module (Step 4)  ✅ Done
-**Goal:** Selected bullets + JD profile → rewritten results (with matched_keywords).
-Runs AFTER selection, on the user's finalized (manually adjustable) working set.
-- [x] `pipeline/step4_rewrite.rewrite_selected`: batches ALL selected bullets into
-  one LLM call (JSON array back), maps results back by temp id, fills
-  `rewritten_text` + `matched_keywords`; falls back to original if an item is missing
-- [x] Prompt (`llm/prompts/rewrite.py`): no fabrication, prefer JD keywords only
-  where applicable, keep length close, preserve real metrics, label keywords used
-- [x] `POST /rewrite` (jd_profile + selected_experiences/projects)
-- [x] UI: prominent "Polish to JD" CTA after selection; before→after panel with
-  JD-keyword chips and "unchanged" marker
-- **Acceptance:** ✅ Unit-tested with mock (fill, global-id batching across exp+proj,
-  missing-item fallback, dict-wrapped array, no-op, missing-key). pytest 43/43.
-  Real call verified: "...using machine learning..." → "...LLM-powered..." (kept the
-  30% metric, used `LLM`, did NOT bolt on unrelated keywords).
+### M4 — Content rewriting module (Step 4)  ✅ Done (ATS-oriented, whole-experience)
+**Goal:** Tailor the selected experiences to the JD for ATS fit. Runs AFTER
+selection, on the user's finalized (manually adjustable) working set.
+- [x] **Whole-experience rewrite** (revised per user feedback — 1:1 bullet rewrite
+  only changed syntax). `rewrite_selected` sends each experience's full bullet set +
+  JD in one batched call; the LLM amplifies JD-relevant points, condenses/drops weak
+  ones (bullet count can shrink), surfaces JD keywords/skills for ATS, uses strong
+  action verbs, quantifies where the original supports it — never fabricating.
+- [x] Output goes to `rewritten_bullets` (originals kept in `selected_bullets` for
+  before→after); fallback to originals if the model omits an experience.
+- [x] Prompt (`llm/prompts/rewrite.py`): senior-recruiter/ATS framing, truthfulness absolute.
+- [x] `POST /rewrite` enriches the prompt with title/org context from the library.
+- [x] UI: prominent "Polish to JD" CTA; experience-level before→after two-column
+  panel with bullet-count delta and the JD keywords surfaced.
+- **Acceptance:** ✅ Unit-tested (count change, exp+proj batching, missing fallback,
+  context titles, dict-wrap, no-op, missing-key). pytest 44/44. Real call: 3 bullets
+  → 2 (dropped an irrelevant "team meetings" line; amplified the ML one to
+  "Built an LLM-powered… applying RAG… 30%", strong verbs, kept the real metric).
+- **Note:** ATS keyword inference can slightly overreach (e.g. added "RAG"); a
+  per-bullet edit affordance is a good follow-up so the user can vet truthfulness.
 
 ### M5 — LaTeX template + rendering (Step 5)  ⬅️ Next
 **Goal:** Rewrite result → `.tex` file (page count not yet handled).
@@ -189,6 +194,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M4-rev — ✅ Done. Reworked rewriting from 1:1 (only changed syntax) to ATS-oriented WHOLE-EXPERIENCE rewrite: amplify JD-relevant points, condense/drop weak ones (bullet count can shrink), surface JD keywords/skills, strong verbs, quantify where supported, no fabrication. Output to `rewritten_bullets`; UI shows experience-level before→after with count delta. pytest 44/44; real call dropped an irrelevant bullet and lifted ATS keywords while keeping the real metric.
 - 2026-06-14 — M4 — ✅ Done. Content rewriting after selection: `step4_rewrite.rewrite_selected` (one batched LLM call, JSON array, id-mapped write-back, original fallback), `rewrite.py` prompt (truthful/keyword-aware/length-preserving), `POST /rewrite`. UI: prominent "Polish to JD" CTA on the working selection + before→after panel. pytest 43/43; real call kept metrics and used JD keywords only where applicable.
 - 2026-06-14 — M3-rev2 — ✅ Done (transparency + manual override per user feedback). score_experience now returns a breakdown (category_score, keyword_score, matched_categories); SelectionResult also returns `ranked_experiences/projects` (all candidates, not just top-N). UI: each pick shows a "why" line (matched JD categories + keywords, or "category only" when no keyword) and the score split on hover; user can remove any pick and add others from a ranked dropdown. pytest 37/37; verified live (selected 2 of 5 ranked, breakdown correct).
 - 2026-06-14 — M3-rev — ✅ Done. Reworked Step 3 from bullet-level to EXPERIENCE-level per user feedback: experiences scored & selected as whole units (all bullets kept together), targets are section counts (`target_experiences`/`target_projects`) not bullet count. Added `score_experience`, rewrote `select_experiences`, updated `/select` + UI (two count inputs, per-experience score). pytest 34/34; verified live on real library.
