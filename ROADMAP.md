@@ -106,8 +106,17 @@ so selection runs on the user's real experiences instead of sample data.
   Save); status line shows whether selection uses YOUR library or the sample
 - **Acceptance:** ✅ decompose unit-tested with mock (happy/empty/bad-schema/no-key);
   text extraction tested; live PUT→GET→health roundtrip flips source sample→user;
-  ingest empty→422. pytest 25/25. (Real-resume LLM decompose: user to verify.)
+  ingest empty→422. (Real-resume LLM decompose verified by user: saved "Joy Sun"
+  library — 3 experiences / 2 projects / 24 skills / 16 bullets.)
 - **Dep added:** `python-multipart` (file uploads).
+- **M3.5b — Structured editable library (added per user feedback):** the raw-JSON
+  preview was replaced with a fully **editable, scrollable** library editor in the
+  UI (per-experience/project/skill, fixed format, **tagged/untagged badges** per
+  bullet, category toggles, add/remove items & bullets, inline tag editing).
+  Plus **append mode**: re-upload a newer resume → `merge_libraries()` adds only new
+  experiences/bullets/skills into the saved library. `materials_merge.py` is a pure,
+  tested module (6 tests: bullet-append, new-item, skill-cat-union, edu-dedup,
+  id-renumber, no-base-mutation). pytest 31/31.
 
 ### M4 — Content rewriting module (Step 4)  ⬅️ Next
 > UI slice: show before/after text for each rewritten bullet in the selection panel.
@@ -164,6 +173,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M3.5b — ✅ Done. Replaced raw-JSON preview with a structured, scrollable, EDITABLE library editor (tagged/untagged badges, category toggles, add/remove items+bullets, inline tag edit). Added append-mode resume merge via tested `materials_merge.merge_libraries`. User has saved their real "Joy Sun" library. pytest 31/31.
 - 2026-06-14 — M3.5 — ✅ Done (pulled forward from Backlog at user request — they wanted real resume data, not the sample). Added text extraction, `decompose_resume` LLM step, `POST /materials/ingest` + `PUT /materials`, `/health.materials_source`, and a "Step 1 — Your material library" UI card (upload/paste → preview → save). pytest 25/25; live PUT→GET→health roundtrip verified; added `python-multipart`.
 - 2026-06-14 — M3 — ✅ Done. Added swappable keyword `scoring.py`, `step3_selection.select_experiences` (category filter → score → per-item cap → global trim keeping ≥1/group), `POST /select`, pulled `GET /materials` forward. UI gained a "Selected experiences" panel (score badges + matched-keyword chips) chained after Analyze. pytest 19/19; live endpoints verified.
 - 2026-06-14 — M2.5 — ✅ Done. Brought the frontend forward per user request (eager to demo MVP). Zero-build single page `app/static/index.html` served at `GET /`, wraps `/jd/analyze` + `/health` status line. Strategy change: UI now grows incrementally per milestone, superseding "frontend last". pytest 11/11.

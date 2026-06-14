@@ -13,6 +13,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from ..config import get_settings
 from ..llm import LLMError
+from ..materials_merge import merge_libraries
 from ..materials_store import load_materials, save_materials
 from ..pipeline.ingest import decompose_resume
 from ..schemas import MaterialsLibrary
@@ -33,10 +34,13 @@ def get_materials() -> MaterialsLibrary:
 async def ingest_resume(
     file: Optional[UploadFile] = File(default=None),
     resume_text: str = Form(default=""),
+    mode: str = Form(default="replace"),  # "replace" | "append"
 ) -> MaterialsLibrary:
     """Decompose an uploaded resume (file and/or pasted text) into a library.
 
-    Returns the parsed library for PREVIEW; it is not saved until PUT /materials.
+    mode="append" merges the parse into the currently SAVED user library (adding
+    only new experiences/bullets/skills). Returns the (possibly merged) library
+    for PREVIEW; nothing is saved until PUT /materials.
     """
     text = resume_text or ""
     if file is not None:
@@ -50,11 +54,17 @@ async def ingest_resume(
         raise HTTPException(status_code=422, detail="No resume text provided.")
 
     try:
-        return decompose_resume(text)
+        parsed = decompose_resume(text)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except LLMError as e:
         raise HTTPException(status_code=503, detail=str(e))
+
+    settings = get_settings()
+    if mode == "append" and settings.materials_path.exists():
+        base = load_materials()  # the saved user library
+        return merge_libraries(base, parsed)
+    return parsed
 
 
 @router.put("/materials")

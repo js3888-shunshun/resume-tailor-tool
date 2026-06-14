@@ -76,8 +76,14 @@ For low-level/debug access, the interactive Swagger UI is at
 Two ways to create `backend/data/materials.json`:
 
 1. **Upload your resume (recommended):** in the web UI, "Step 1 — Your material
-   library" → upload a PDF/TXT/TeX or paste text → **Build library from resume**
-   (Claude decomposes it) → review → **Save as my library**.
+   library" → upload a PDF/TXT/TeX or paste text → **Parse resume** (Claude
+   decomposes it) → review/edit in the structured editor → **Save library**.
+   - The editor is fully editable: edit any field, toggle categories, add/remove
+     experiences/projects/skills/bullets, edit skill tags. Each bullet shows a
+     **tagged / untagged** badge so you can spot what still needs tags.
+   - **Append mode:** to fold a newer resume version into your saved library,
+     pick **Append to saved** before parsing — only new experiences/bullets/skills
+     are added (duplicates are skipped).
 2. **Hand-author** `backend/data/materials.json` following the schema in
    `backend/app/schemas/materials.py`.
 
