@@ -13,28 +13,37 @@
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.5; }
-    .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
-    header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-    h1 { font-size: 22px; margin: 0; }
-    .sub { color: var(--muted); font-size: 13px; }
-    .status { font-size: 12px; color: var(--muted); }
-    .status .dot, #lib-source .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+    /* layout: left sidebar + main */
+    .app { display: flex; min-height: 100vh; }
+    .sidebar { width: 210px; flex: 0 0 210px; background: #10151b; border-right: 1px solid var(--border);
+      padding: 20px 14px; display: flex; flex-direction: column; gap: 6px; position: sticky; top: 0; height: 100vh; }
+    .brand { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+    .brand small { display:block; font-weight:400; color:var(--muted); font-size:11px; margin-top:2px; }
+    .tab-btn { text-align: left; background: transparent; border: 0; color: var(--muted); border-radius: 8px;
+      padding: 10px 12px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .tab-btn:hover { background: var(--panel-2); color: var(--text); }
+    .tab-btn.active { background: var(--accent-soft); color: #bdd3ff; }
+    .side-status { margin-top: auto; font-size: 11px; color: var(--muted); line-height: 1.6; }
+    .side-status .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
     .dot.ok { background: var(--ok); } .dot.bad { background: var(--err); }
-    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-top: 20px; }
+    .main { flex: 1; min-width: 0; padding: 28px 28px 80px; max-width: 920px; }
+
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 18px; }
     label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
-    textarea { width: 100%; min-height: 120px; resize: vertical; background: var(--panel-2);
+    textarea { width: 100%; min-height: 110px; resize: vertical; background: var(--panel-2);
       color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
       font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; }
     #jd { min-height: 200px; }
     .row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
     button { background: var(--accent); color: #fff; border: 0; border-radius: 8px;
-      padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
+      padding: 9px 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
     button:disabled { opacity: 0.55; cursor: not-allowed; }
     button.secondary { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); }
     .hint { color: var(--muted); font-size: 12px; }
     .error { color: var(--err); font-size: 13px; margin-top: 12px; white-space: pre-wrap; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
     .field-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 0 0 8px; }
     .big { font-size: 18px; font-weight: 600; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
@@ -48,21 +57,34 @@
     .spinner { display:inline-block; width:14px; height:14px; border:2px solid #fff; border-top-color: transparent; border-radius:50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* selection panel */
-    .exp-block { border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:12px; background: var(--panel-2); }
-    .exp-head { display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:8px; }
-    .exp-title { font-weight:600; font-size:14px; }
-    .exp-meta { color: var(--muted); font-size:12px; }
-    .tag { font-size:10px; text-transform:uppercase; letter-spacing:0.04em; color: var(--muted); border:1px solid var(--border); border-radius:4px; padding:1px 5px; margin-left:6px; }
-    .bullet { display:flex; gap:10px; align-items:flex-start; padding:6px 0; border-top:1px solid var(--border); }
-    .bullet:first-of-type { border-top:0; }
-    .score-badge { flex:0 0 auto; min-width:34px; text-align:center; font-size:11px; font-weight:700; color:#bdd3ff; background: var(--accent-soft); border:1px solid #2d4a7a; border-radius:6px; padding:2px 6px; }
-    .score-badge.zero { color: var(--muted); background: transparent; border-color: var(--border); }
-    .bullet-body { flex:1; } .bullet-text { font-size:13px; } .bullet-kw { margin-top:4px; }
+    /* === resume-like compact library === */
+    .resume-paper { background:#fbfbf8; color:#1f2328; border:1px solid var(--border); border-radius:10px;
+      padding:30px 36px; font-family: Georgia, "Times New Roman", serif; margin-top:6px; }
+    .rp-name { font-size:23px; font-weight:700; text-align:center; letter-spacing:.5px; }
+    .rp-contact { text-align:center; color:#555; font-size:12px; margin-top:4px; }
+    .rp-sec { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:#2a2a2a;
+      border-bottom:1.5px solid #333; margin:20px 0 8px; padding-bottom:3px; }
+    .rp-entry { margin-bottom:11px; }
+    .rp-entry-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+    .rp-title { font-weight:700; font-size:14px; }
+    .rp-dates { color:#555; font-size:12px; font-style:italic; white-space:nowrap; }
+    .rp-sub { font-size:12.5px; color:#444; font-style:italic; margin-top:1px; }
+    .rp-bullets { margin:4px 0 0; padding-left:20px; }
+    .rp-bullets li { font-size:12.5px; margin-bottom:2px; line-height:1.45; }
+    .rp-skills { font-size:12.5px; line-height:1.7; }
+    .rp-meta { margin-top:4px; display:flex; gap:12px; align-items:center; }
+    .rp-cats { font-size:10px; color:#8a8a8a; text-transform:uppercase; letter-spacing:.6px; }
+    .rp-link { font-size:11px; color:#2f6df0; cursor:pointer; user-select:none; }
+    .rp-link:hover { text-decoration: underline; }
+    .rp-tags { margin-top:5px; padding-left:20px; }
+    .rp-tagline { display:flex; gap:5px; flex-wrap:wrap; align-items:center; margin-bottom:4px; }
+    .rp-tagline .chip { background:#eef1fb; border:1px solid #ccd3ee; color:#33406b; font-size:11px; }
+    .rp-tagline .bt { font-size:11px; color:#777; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-style:italic; }
+    .rp-empty { color:#888; font-style:italic; font-family: ui-sans-serif, system-ui; }
 
-    /* === editable library === */
-    #lib-editor { max-height: 62vh; overflow-y: auto; border:1px solid var(--border); border-radius:10px;
-      padding:14px; background:#0b0e12; margin-top:12px; }
+    /* === editable form (edit mode) — compact === */
+    #lib-editor { max-height: 64vh; overflow-y: auto; border:1px solid var(--border); border-radius:10px;
+      padding:14px; background:#0b0e12; margin-top:6px; }
     .lib-summary-bar { font-size:12px; color:var(--muted); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
     .warn { color:var(--hl); font-weight:700; } .okk { color:var(--ok); font-weight:700; }
     .sec { margin-bottom:20px; }
@@ -78,7 +100,7 @@
       border-radius:6px; padding:6px 8px; font-size:13px; font-family:inherit; }
     textarea.edit { min-height:46px; resize:vertical; }
     .mini { background:var(--panel-2); border:1px solid var(--border); color:var(--text); border-radius:6px;
-      padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer; }
+      padding:5px 11px; font-size:12px; font-weight:600; cursor:pointer; }
     .mini.danger { color:var(--err); border-color:#5a1f1f; }
     .cat-toggle { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:999px;
       padding:2px 11px; font-size:11px; font-weight:600; cursor:pointer; }
@@ -95,110 +117,121 @@
     .b-edit-row { display:flex; gap:8px; align-items:center; margin-top:6px; }
     .b-edit-row > label.inl { flex:0 0 64px; }
     .spacer { flex:1; } .prio { width:58px; flex:0 0 58px; }
+
+    /* selection panel */
+    .exp-block { border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:12px; background: var(--panel-2); }
+    .exp-head { display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:8px; }
+    .exp-title { font-weight:600; font-size:14px; }
+    .exp-meta { color: var(--muted); font-size:12px; }
+    .tag { font-size:10px; text-transform:uppercase; letter-spacing:0.04em; color: var(--muted); border:1px solid var(--border); border-radius:4px; padding:1px 5px; margin-left:6px; }
+    .bullet { display:flex; gap:10px; align-items:flex-start; padding:6px 0; border-top:1px solid var(--border); }
+    .bullet:first-of-type { border-top:0; }
+    .score-badge { flex:0 0 auto; min-width:34px; text-align:center; font-size:11px; font-weight:700; color:#bdd3ff; background: var(--accent-soft); border:1px solid #2d4a7a; border-radius:6px; padding:2px 6px; }
+    .score-badge.zero { color: var(--muted); background: transparent; border-color: var(--border); }
+    .bullet-body { flex:1; } .bullet-text { font-size:13px; } .bullet-kw { margin-top:4px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>AI Resume Tailor</h1>
-        <div class="sub">Build &amp; edit your material library, analyze a JD, see the tailored selection.</div>
+  <div class="app">
+    <nav class="sidebar">
+      <div class="brand">AI Resume Tailor<small>tailor resumes to a JD</small></div>
+      <button class="tab-btn active" data-tab="library">📁 Material Library</button>
+      <button class="tab-btn" data-tab="tailor">🎯 Tailor to JD</button>
+      <div class="side-status">
+        <div id="status">checking…</div>
+        <div id="lib-source" style="margin-top:6px;"></div>
       </div>
-      <div class="status" id="status">checking backend…</div>
-    </header>
+    </nav>
 
-    <!-- STEP 1 -->
-    <div class="card">
-      <div class="row" style="justify-content:space-between; margin:0 0 10px;">
-        <label style="margin:0;">Step 1 — Your material library</label>
-        <span class="muted" id="lib-source" style="font-size:12px;"></span>
-      </div>
-      <div class="hint" style="margin-bottom:10px;">
-        Upload a resume (PDF / TXT / TeX) or paste text → Claude parses it into the
-        editable library below. <b>Replace</b> starts fresh; <b>Append</b> merges a
-        new resume version into your saved library (adds only new items/bullets).
-      </div>
-      <input type="file" id="resumeFile" accept=".pdf,.txt,.tex,.md,.text" style="font-size:13px; color:var(--muted);" />
-      <textarea id="resumeText" placeholder="…or paste your resume text here"></textarea>
-      <div class="row">
-        <button id="buildBtn">Parse resume</button>
-        <label class="inl" style="display:flex; align-items:center; gap:5px; margin:0;">
-          <input type="radio" name="mode" value="replace" checked /> Replace</label>
-        <label class="inl" style="display:flex; align-items:center; gap:5px; margin:0;">
-          <input type="radio" name="mode" value="append" /> Append to saved</label>
-        <span class="hint" id="lib-hint"></span>
-      </div>
-      <div class="error" id="lib-error"></div>
-
-      <div id="lib-editor-wrap" style="display:none;">
-        <div class="row" style="justify-content:space-between; margin-top:16px;">
-          <span class="field-title" style="margin:0;">Your library — fully editable</span>
-          <span class="hint">Scroll inside the box. Edits are kept in memory until you Save.</span>
+    <main class="main">
+      <!-- ============ TAB: LIBRARY ============ -->
+      <section class="tab-panel" id="tab-library">
+        <div class="card">
+          <label>Build / update your material library</label>
+          <div class="hint" style="margin-bottom:10px;">
+            Parse your resume <b>PDF</b> to create the initial library. To add a new
+            experience later, paste its text and <b>Parse &amp; append</b> — it's merged
+            into your saved library (only new items/bullets are added).
+          </div>
+          <input type="file" id="resumeFile" accept=".pdf,.txt,.tex,.md,.text" style="font-size:13px; color:var(--muted);" />
+          <div class="row">
+            <button id="parseReplaceBtn">Parse PDF → new library</button>
+          </div>
+          <div style="margin-top:14px;">
+            <label>Add a new experience / section (paste text)</label>
+            <textarea id="resumeText" placeholder="Paste a new role, project, or resume section to add…"></textarea>
+            <div class="row">
+              <button class="secondary" id="parseAppendBtn">Parse &amp; append</button>
+              <span class="hint" id="lib-hint"></span>
+            </div>
+          </div>
+          <div class="error" id="lib-error"></div>
         </div>
-        <div id="lib-editor"></div>
-        <div class="row">
-          <button id="saveLibBtn">Save library</button>
+
+        <div class="card" id="lib-card" style="display:none;">
+          <div class="row" style="justify-content:space-between; margin:0 0 4px;">
+            <label style="margin:0;">Your library</label>
+            <div style="display:flex; gap:8px;">
+              <button class="mini" id="toggleViewBtn">✎ Edit mode</button>
+              <button id="saveLibBtn">Save</button>
+            </div>
+          </div>
           <span class="hint" id="save-hint"></span>
+          <div id="lib-compact" class="resume-paper"></div>
+          <div id="lib-editor-wrap" style="display:none;">
+            <div id="lib-editor"></div>
+          </div>
+          <details class="raw"><summary class="muted">Raw JSON</summary><pre id="lib-raw"></pre></details>
         </div>
-        <details class="raw"><summary class="muted">Raw JSON</summary><pre id="lib-raw"></pre></details>
-      </div>
-    </div>
+      </section>
 
-    <!-- STEP 2 -->
-    <div class="card">
-      <label for="jd">Step 2 — Job description</label>
-      <textarea id="jd" placeholder="Paste the full job description here…"></textarea>
-      <div class="row">
-        <button id="analyzeBtn">Analyze &amp; Select</button>
-        <button class="secondary" id="sampleBtn">Load sample JD</button>
-        <label for="target" style="margin:0 0 0 8px;">Target bullets</label>
-        <input id="target" type="number" min="1" max="40" value="12"
-               style="width:64px; background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px;" />
-      </div>
-      <div class="error" id="error"></div>
-    </div>
-
-    <!-- JD PROFILE -->
-    <div class="card" id="result" style="display:none;">
-      <div class="grid">
-        <div>
-          <p class="field-title">Role</p>
-          <div class="big" id="r-title">—</div>
-          <div class="muted" id="r-company">—</div>
+      <!-- ============ TAB: TAILOR ============ -->
+      <section class="tab-panel" id="tab-tailor" hidden>
+        <div class="card">
+          <label for="jd">Job description</label>
+          <textarea id="jd" placeholder="Paste the full job description here…"></textarea>
+          <div class="row">
+            <button id="analyzeBtn">Analyze &amp; Select</button>
+            <button class="secondary" id="sampleBtn">Load sample JD</button>
+            <label for="target" style="margin:0 0 0 8px;">Target bullets</label>
+            <input id="target" type="number" min="1" max="40" value="12"
+                   style="width:64px; background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px;" />
+          </div>
+          <div class="error" id="error"></div>
         </div>
-        <div>
-          <p class="field-title">Category</p>
-          <div class="chips" id="r-cats"></div>
-          <p class="field-title" style="margin-top:14px;">Tone</p>
-          <div class="muted" id="r-tone">—</div>
-        </div>
-      </div>
-      <p class="field-title" style="margin-top:18px;">Keywords to highlight</p>
-      <div class="chips" id="r-keywords"></div>
-      <div class="grid" style="margin-top:18px;">
-        <div><p class="field-title">Key skills</p><div class="chips" id="r-skills"></div></div>
-        <div><p class="field-title">Key responsibilities</p><ul class="resp" id="r-resp"></ul></div>
-      </div>
-      <details class="raw"><summary class="muted">Raw JSON</summary><pre id="r-raw"></pre></details>
-    </div>
 
-    <!-- SELECTION -->
-    <div class="card" id="selection" style="display:none;">
-      <div class="row" style="justify-content:space-between; margin:0 0 6px;">
-        <p class="field-title" style="margin:0;">Selected experiences (Step 3)</p>
-        <span class="muted" id="sel-summary" style="font-size:12px;"></span>
-      </div>
-      <div class="hint" style="margin-bottom:10px;">Bullets picked by keyword-overlap score &amp; priority. Chips = matched JD keywords.</div>
-      <div id="sel-body"></div>
-      <details class="raw"><summary class="muted">Raw JSON</summary><pre id="sel-raw"></pre></details>
-    </div>
+        <div class="card" id="result" style="display:none;">
+          <div class="grid">
+            <div><p class="field-title">Role</p><div class="big" id="r-title">—</div><div class="muted" id="r-company">—</div></div>
+            <div><p class="field-title">Category</p><div class="chips" id="r-cats"></div>
+              <p class="field-title" style="margin-top:14px;">Tone</p><div class="muted" id="r-tone">—</div></div>
+          </div>
+          <p class="field-title" style="margin-top:18px;">Keywords to highlight</p>
+          <div class="chips" id="r-keywords"></div>
+          <div class="grid" style="margin-top:18px;">
+            <div><p class="field-title">Key skills</p><div class="chips" id="r-skills"></div></div>
+            <div><p class="field-title">Key responsibilities</p><ul class="resp" id="r-resp"></ul></div>
+          </div>
+          <details class="raw"><summary class="muted">Raw JSON</summary><pre id="r-raw"></pre></details>
+        </div>
+
+        <div class="card" id="selection" style="display:none;">
+          <div class="row" style="justify-content:space-between; margin:0 0 6px;">
+            <p class="field-title" style="margin:0;">Selected experiences (Step 3)</p>
+            <span class="muted" id="sel-summary" style="font-size:12px;"></span>
+          </div>
+          <div class="hint" style="margin-bottom:10px;">Bullets picked by keyword-overlap score &amp; priority. Chips = matched JD keywords.</div>
+          <div id="sel-body"></div>
+          <details class="raw"><summary class="muted">Raw JSON</summary><pre id="sel-raw"></pre></details>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script>
     const $ = (id) => document.getElementById(id);
     const CATS = ['AI', 'DS', 'DE', 'MLE', 'SDE'];
 
-    // tiny hyperscript helper. 'val' sets element.value as a property.
     function h(tag, attrs, ...kids) {
       const e = document.createElement(tag);
       attrs = attrs || {};
@@ -215,11 +248,6 @@
         e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
       return e;
     }
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, (c) =>
-        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    }
-
     const SAMPLE_JD = `Senior Machine Learning Engineer - Acme Robotics
 
 We are building autonomous warehouse robots. You will design, train and deploy
@@ -229,34 +257,105 @@ Python and Spark to process millions of sensor frames. Experience with MLOps
 (Docker, Kubernetes, MLflow), real-time systems, and A/B testing of model
 versions in production is required. Fast-paced startup environment.`;
 
-    // =================== STATUS ===================
+    // =============== TABS ===============
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('.tab-panel').forEach((p) => { p.hidden = (p.id !== 'tab-' + btn.dataset.tab); });
+      });
+    });
+
+    // =============== STATUS ===============
     async function refreshStatus() {
       try {
-        const h2 = await (await fetch('/health')).json();
-        const keyOk = h2.has_api_key;
+        const s = await (await fetch('/health')).json();
         $('status').innerHTML =
-          `<span class="dot ${keyOk ? 'ok' : 'bad'}"></span>API key ${keyOk ? 'set' : 'missing'}` +
-          ` &nbsp;·&nbsp; model ${h2.model} &nbsp;·&nbsp; LaTeX ${h2.latex_engine || 'not installed'}`;
-        $('lib-source').innerHTML = h2.materials_source === 'user'
-          ? `<span class="dot ok"></span>using YOUR saved library`
-          : `<span class="dot bad"></span>using SAMPLE data (parse &amp; save yours)`;
-        return h2;
-      } catch (e) {
-        $('status').innerHTML = `<span class="dot bad"></span>backend unreachable`;
-        return null;
+          `<span class="dot ${s.has_api_key ? 'ok' : 'bad'}"></span>API ${s.has_api_key ? 'ready' : 'no key'}<br>` +
+          `<span class="muted">model ${s.model}</span><br>` +
+          `<span class="muted">LaTeX ${s.latex_engine || '—'}</span>`;
+        $('lib-source').innerHTML = s.materials_source === 'user'
+          ? `<span class="dot ok"></span>your library`
+          : `<span class="dot bad"></span>sample data`;
+        return s;
+      } catch (e) { $('status').innerHTML = `<span class="dot bad"></span>backend offline`; return null; }
+    }
+
+    // =============== LIBRARY MODEL ===============
+    let LIBRARY = null;
+    let LIB_VIEW = 'compact';
+
+    function dateRange(e) {
+      const a = e.start_date || '', b = e.end_date || '';
+      return (a || b) ? `${a}${a && b ? ' – ' : ''}${b}` : '';
+    }
+
+    // ---- compact, resume-like view ----
+    function rpSection(title) { return h('div', { class: 'rp-sec' }, title); }
+
+    function rpExp(e, kind) {
+      const isProj = kind === 'projects';
+      const head = h('div', { class: 'rp-entry-head' },
+        h('span', { class: 'rp-title' }, e.title || '(untitled)'),
+        h('span', { class: 'rp-dates' }, isProj ? '' : dateRange(e)));
+      const sub = isProj ? null : h('div', { class: 'rp-sub' }, [e.organization, e.location].filter(Boolean).join('  ·  '));
+      const ul = h('ul', { class: 'rp-bullets' }, (e.bullets || []).map((b) => h('li', {}, b.text || '')));
+
+      // tags hidden by default; toggle reveals them per bullet
+      const tagWrap = h('div', { class: 'rp-tags', style: 'display:none;' },
+        (e.bullets || []).map((b) => (b.skill_tags || []).length
+          ? h('div', { class: 'rp-tagline' },
+              h('span', { class: 'bt' }, (b.text || '').slice(0, 40) + '…'),
+              b.skill_tags.map((t) => h('span', { class: 'chip' }, t)))
+          : null));
+      const hasTags = (e.bullets || []).some((b) => (b.skill_tags || []).length);
+      const toggle = hasTags
+        ? h('span', { class: 'rp-link', onclick: (ev) => {
+            const open = tagWrap.style.display !== 'none';
+            tagWrap.style.display = open ? 'none' : 'block';
+            ev.target.textContent = open ? 'show tags' : 'hide tags';
+          } }, 'show tags')
+        : h('span', { class: 'rp-cats' }, 'no tags');
+      const cats = (e.categories || []).join(' / ');
+      const meta = h('div', { class: 'rp-meta' }, cats ? h('span', { class: 'rp-cats' }, cats) : null, toggle);
+      return h('div', { class: 'rp-entry' }, head, sub, ul, meta, tagWrap);
+    }
+
+    function renderCompact() {
+      const c = $('lib-compact'); c.innerHTML = '';
+      if (!LIBRARY) { c.appendChild(h('div', { class: 'rp-empty' }, 'No library yet — parse your resume to begin.')); return; }
+      const pi = LIBRARY.personal_info || {};
+      c.appendChild(h('div', { class: 'rp-name' }, pi.name || 'Your Name'));
+      const contact = [pi.email, pi.phone, ...(pi.links || [])].filter(Boolean).join('   ·   ');
+      if (contact) c.appendChild(h('div', { class: 'rp-contact' }, contact));
+
+      if ((LIBRARY.education || []).length) {
+        c.appendChild(rpSection('Education'));
+        LIBRARY.education.forEach((e) => c.appendChild(h('div', { class: 'rp-entry' },
+          h('div', { class: 'rp-entry-head' }, h('span', { class: 'rp-title' }, e.school || ''), h('span', { class: 'rp-dates' }, dateRange(e))),
+          h('div', { class: 'rp-sub' }, [e.degree, e.major].filter(Boolean).join(', ')),
+          (e.details || []).length ? h('ul', { class: 'rp-bullets' }, e.details.map((d) => h('li', {}, d))) : null)));
+      }
+      if ((LIBRARY.experiences || []).length) {
+        c.appendChild(rpSection('Experience'));
+        LIBRARY.experiences.forEach((e) => c.appendChild(rpExp(e, 'experiences')));
+      }
+      if ((LIBRARY.projects || []).length) {
+        c.appendChild(rpSection('Projects'));
+        LIBRARY.projects.forEach((e) => c.appendChild(rpExp(e, 'projects')));
+      }
+      if ((LIBRARY.skills || []).length) {
+        c.appendChild(rpSection('Skills'));
+        c.appendChild(h('div', { class: 'rp-skills' }, LIBRARY.skills.map((s) => s.name).filter(Boolean).join('   ·   ')));
       }
     }
 
-    // =================== EDITABLE LIBRARY ===================
-    let LIBRARY = null;
-
+    // ---- editable form (edit mode) ----
     function inp(obj, key, ph) {
       const e = h('input', { class: 'edit', val: obj[key] == null ? '' : obj[key], placeholder: ph || '' });
       e.addEventListener('input', (ev) => { obj[key] = ev.target.value; });
       return e;
     }
     function field(label, ctrl) { return h('div', { class: 'f' }, h('label', { class: 'inl' }, label), ctrl); }
-
     function linksInput(pi) {
       const e = h('input', { class: 'edit', val: (pi.links || []).join(', '), placeholder: 'github.com/…, linkedin.com/…' });
       e.addEventListener('input', (ev) => { pi.links = ev.target.value.split(',').map((s) => s.trim()).filter(Boolean); });
@@ -272,42 +371,31 @@ versions in production is required. Fast-paced startup environment.`;
       return h('div', { class: 'chips' }, CATS.map((c) => {
         const on = item.categories.includes(c);
         return h('button', { class: 'cat-toggle' + (on ? ' on' : ''), type: 'button', onclick: () => {
-          const i = item.categories.indexOf(c);
-          if (i >= 0) item.categories.splice(i, 1); else item.categories.push(c);
-          reRender();
+          const i = item.categories.indexOf(c); if (i >= 0) item.categories.splice(i, 1); else item.categories.push(c); renderEditor();
         } }, c);
       }));
     }
     function tagsEditor(bullet) {
       bullet.skill_tags = bullet.skill_tags || [];
       const wrap = h('div', { class: 'chips' });
-      bullet.skill_tags.forEach((t, i) => {
-        wrap.appendChild(h('span', { class: 'chip tag-chip' }, t,
-          h('span', { class: 'x', onclick: () => { bullet.skill_tags.splice(i, 1); reRender(); } }, '×')));
-      });
+      bullet.skill_tags.forEach((t, i) => wrap.appendChild(h('span', { class: 'chip tag-chip' }, t,
+        h('span', { class: 'x', onclick: () => { bullet.skill_tags.splice(i, 1); renderEditor(); } }, '×'))));
       const add = h('input', { class: 'tag-add', placeholder: '+ tag' });
-      add.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter' && ev.target.value.trim()) {
-          bullet.skill_tags.push(ev.target.value.trim()); reRender();
-        }
-      });
-      wrap.appendChild(add);
-      return wrap;
+      add.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && ev.target.value.trim()) { bullet.skill_tags.push(ev.target.value.trim()); renderEditor(); } });
+      wrap.appendChild(add); return wrap;
     }
     function bulletBlock(parent, bullet, idx) {
       const tagged = (bullet.skill_tags || []).length > 0;
-      const badge = h('span', { class: 'tagbadge ' + (tagged ? 'ok' : 'no') },
-        tagged ? ('tagged · ' + bullet.skill_tags.length) : 'untagged');
+      const badge = h('span', { class: 'tagbadge ' + (tagged ? 'ok' : 'no') }, tagged ? ('tagged · ' + bullet.skill_tags.length) : 'untagged');
       const ta = h('textarea', { class: 'edit', val: bullet.text || '', placeholder: 'bullet text' });
       ta.addEventListener('input', (ev) => { bullet.text = ev.target.value; });
       const prio = h('input', { type: 'number', min: '1', max: '3', class: 'edit prio', val: bullet.priority == null ? 2 : bullet.priority });
       prio.addEventListener('input', (ev) => { bullet.priority = parseInt(ev.target.value, 10) || 2; });
       const metric = h('input', { class: 'edit', val: bullet.impact_metrics || '', placeholder: 'impact metric (optional)' });
       metric.addEventListener('input', (ev) => { bullet.impact_metrics = ev.target.value.trim() || null; });
-      const del = h('button', { class: 'mini danger', type: 'button', onclick: () => { parent.bullets.splice(idx, 1); reRender(); } }, 'Delete');
+      const del = h('button', { class: 'mini danger', type: 'button', onclick: () => { parent.bullets.splice(idx, 1); renderEditor(); } }, 'Delete');
       return h('div', { class: 'b-edit' },
-        h('div', { class: 'b-edit-head' }, badge, h('span', { class: 'spacer' }),
-          h('label', { class: 'inl' }, 'priority'), prio, del),
+        h('div', { class: 'b-edit-head' }, badge, h('span', { class: 'spacer' }), h('label', { class: 'inl' }, 'priority'), prio, del),
         ta,
         h('div', { class: 'b-edit-row' }, h('label', { class: 'inl' }, 'tags'), tagsEditor(bullet)),
         h('div', { class: 'b-edit-row' }, h('label', { class: 'inl' }, 'metric'), metric));
@@ -316,173 +404,146 @@ versions in production is required. Fast-paced startup environment.`;
       const isProj = kind === 'projects';
       const grid = isProj
         ? h('div', { class: 'item-grid' }, field('Title', inp(exp, 'title')))
-        : h('div', { class: 'item-grid' },
-            field('Title', inp(exp, 'title')), field('Organization', inp(exp, 'organization')),
-            field('Location', inp(exp, 'location')), field('Start', inp(exp, 'start_date')),
-            field('End', inp(exp, 'end_date')));
-      const bulletsWrap = h('div', {},
-        (exp.bullets || []).map((b, bi) => bulletBlock(exp, b, bi)),
-        h('button', { class: 'mini', type: 'button', onclick: () => {
-          exp.bullets = exp.bullets || [];
-          exp.bullets.push({ id: '', text: '', skill_tags: [], impact_metrics: null, priority: 2 });
-          reRender();
-        } }, '+ bullet'));
+        : h('div', { class: 'item-grid' }, field('Title', inp(exp, 'title')), field('Organization', inp(exp, 'organization')),
+            field('Location', inp(exp, 'location')), field('Start', inp(exp, 'start_date')), field('End', inp(exp, 'end_date')));
+      const bulletsWrap = h('div', {}, (exp.bullets || []).map((b, bi) => bulletBlock(exp, b, bi)),
+        h('button', { class: 'mini', type: 'button', onclick: () => { exp.bullets = exp.bullets || []; exp.bullets.push({ id: '', text: '', skill_tags: [], impact_metrics: null, priority: 2 }); renderEditor(); } }, '+ bullet'));
       return h('div', { class: 'item' },
         h('div', { class: 'item-head' }, h('span', { class: 'muted', style: 'font-size:12px;' }, exp.id || '(new)'),
-          h('button', { class: 'mini danger', type: 'button', onclick: () => { LIBRARY[kind].splice(idx, 1); reRender(); } },
-            'Delete ' + (isProj ? 'project' : 'experience'))),
-        grid,
-        h('div', { class: 'f' }, h('label', { class: 'inl' }, 'Categories'), catRow(exp)),
+          h('button', { class: 'mini danger', type: 'button', onclick: () => { LIBRARY[kind].splice(idx, 1); renderEditor(); } }, 'Delete ' + (isProj ? 'project' : 'experience'))),
+        grid, h('div', { class: 'f' }, h('label', { class: 'inl' }, 'Categories'), catRow(exp)),
         h('div', { class: 'f', style: 'margin-top:8px;' }, h('label', { class: 'inl' }, 'Bullets'), bulletsWrap));
     }
     function eduItem(edu, idx) {
       return h('div', { class: 'item' },
         h('div', { class: 'item-head' }, h('span', { class: 'muted', style: 'font-size:12px;' }, edu.id || '(new)'),
-          h('button', { class: 'mini danger', type: 'button', onclick: () => { LIBRARY.education.splice(idx, 1); reRender(); } }, 'Delete')),
-        h('div', { class: 'item-grid' },
-          field('School', inp(edu, 'school')), field('Degree', inp(edu, 'degree')),
+          h('button', { class: 'mini danger', type: 'button', onclick: () => { LIBRARY.education.splice(idx, 1); renderEditor(); } }, 'Delete')),
+        h('div', { class: 'item-grid' }, field('School', inp(edu, 'school')), field('Degree', inp(edu, 'degree')),
           field('Major', inp(edu, 'major')), field('Start', inp(edu, 'start_date')), field('End', inp(edu, 'end_date'))),
         field('Details (one per line)', detailsInput(edu)));
     }
     function skillItem(s, idx) {
       return h('div', { class: 'item' },
         h('div', { class: 'item-head' }, inp(s, 'name', 'skill name'),
-          h('button', { class: 'mini danger', type: 'button', onclick: () => { LIBRARY.skills.splice(idx, 1); reRender(); } }, 'Delete')),
+          h('button', { class: 'mini danger', type: 'button', onclick: () => { LIBRARY.skills.splice(idx, 1); renderEditor(); } }, 'Delete')),
         h('div', { class: 'b-edit-row' }, h('label', { class: 'inl' }, 'proficiency'), inp(s, 'proficiency', 'e.g. advanced')),
         h('div', { class: 'b-edit-row' }, h('label', { class: 'inl' }, 'categories'), catRow(s)));
     }
     function section(title, addLabel, onAdd, items) {
-      return h('div', { class: 'sec' },
-        h('div', { class: 'sec-head' }, h('span', { class: 'sec-title' }, title),
-          onAdd ? h('button', { class: 'mini', type: 'button', onclick: onAdd }, addLabel) : null),
-        items);
+      return h('div', { class: 'sec' }, h('div', { class: 'sec-head' }, h('span', { class: 'sec-title' }, title),
+        onAdd ? h('button', { class: 'mini', type: 'button', onclick: onAdd }, addLabel) : null), items);
     }
-
     function renderEditor() {
-      const c = $('lib-editor');
-      const scroll = c.scrollTop;
-      c.innerHTML = '';
-      if (!LIBRARY) { c.appendChild(h('div', { class: 'muted' }, 'No library yet — parse a resume above.')); return; }
-
+      const c = $('lib-editor'); const scroll = c.scrollTop; c.innerHTML = '';
+      if (!LIBRARY) return;
       const allB = [...(LIBRARY.experiences || []), ...(LIBRARY.projects || [])].flatMap((it) => it.bullets || []);
       const untag = allB.filter((b) => !(b.skill_tags || []).length).length;
       c.appendChild(h('div', { class: 'lib-summary-bar' },
-        `${(LIBRARY.education || []).length} education · ${(LIBRARY.experiences || []).length} experiences · ` +
-        `${(LIBRARY.projects || []).length} projects · ${allB.length} bullets · `,
-        h('span', { class: untag ? 'warn' : 'okk' }, `${untag} untagged`),
-        ` · ${(LIBRARY.skills || []).length} skills`));
-
+        `${(LIBRARY.education || []).length} education · ${(LIBRARY.experiences || []).length} experiences · ${(LIBRARY.projects || []).length} projects · ${allB.length} bullets · `,
+        h('span', { class: untag ? 'warn' : 'okk' }, `${untag} untagged`), ` · ${(LIBRARY.skills || []).length} skills`));
       const pi = LIBRARY.personal_info || (LIBRARY.personal_info = { name: '', email: '', phone: '', links: [] });
       c.appendChild(section('Personal info', null, null,
-        h('div', { class: 'pi-grid' }, field('Name', inp(pi, 'name')), field('Email', inp(pi, 'email')),
-          field('Phone', inp(pi, 'phone')), field('Links', linksInput(pi)))));
-
+        h('div', { class: 'pi-grid' }, field('Name', inp(pi, 'name')), field('Email', inp(pi, 'email')), field('Phone', inp(pi, 'phone')), field('Links', linksInput(pi)))));
       c.appendChild(section('Education', '+ education',
-        () => { LIBRARY.education = LIBRARY.education || []; LIBRARY.education.push({ id: '', school: '', degree: '', major: '', start_date: '', end_date: '', details: [] }); reRender(); },
+        () => { LIBRARY.education = LIBRARY.education || []; LIBRARY.education.push({ id: '', school: '', degree: '', major: '', start_date: '', end_date: '', details: [] }); renderEditor(); },
         (LIBRARY.education || []).map((e, i) => eduItem(e, i))));
-
       c.appendChild(section('Experiences', '+ experience',
-        () => { LIBRARY.experiences = LIBRARY.experiences || []; LIBRARY.experiences.push({ id: '', title: '', organization: '', location: '', start_date: '', end_date: '', categories: [], bullets: [] }); reRender(); },
+        () => { LIBRARY.experiences = LIBRARY.experiences || []; LIBRARY.experiences.push({ id: '', title: '', organization: '', location: '', start_date: '', end_date: '', categories: [], bullets: [] }); renderEditor(); },
         (LIBRARY.experiences || []).map((e, i) => expItem(e, i, 'experiences'))));
-
       c.appendChild(section('Projects', '+ project',
-        () => { LIBRARY.projects = LIBRARY.projects || []; LIBRARY.projects.push({ id: '', title: '', categories: [], bullets: [] }); reRender(); },
+        () => { LIBRARY.projects = LIBRARY.projects || []; LIBRARY.projects.push({ id: '', title: '', categories: [], bullets: [] }); renderEditor(); },
         (LIBRARY.projects || []).map((e, i) => expItem(e, i, 'projects'))));
-
       c.appendChild(section('Skills', '+ skill',
-        () => { LIBRARY.skills = LIBRARY.skills || []; LIBRARY.skills.push({ name: '', categories: [], proficiency: '' }); reRender(); },
+        () => { LIBRARY.skills = LIBRARY.skills || []; LIBRARY.skills.push({ name: '', categories: [], proficiency: '' }); renderEditor(); },
         (LIBRARY.skills || []).map((s, i) => skillItem(s, i))));
-
-      $('lib-raw').textContent = JSON.stringify(LIBRARY, null, 2);
       c.scrollTop = scroll;
     }
-    function reRender() { renderEditor(); }
+
+    function renderLibrary() {
+      $('lib-card').style.display = LIBRARY ? 'block' : 'none';
+      if (LIB_VIEW === 'compact') {
+        $('lib-compact').style.display = 'block'; $('lib-editor-wrap').style.display = 'none';
+        $('toggleViewBtn').textContent = '✎ Edit mode'; renderCompact();
+      } else {
+        $('lib-compact').style.display = 'none'; $('lib-editor-wrap').style.display = 'block';
+        $('toggleViewBtn').textContent = '👁 View mode'; renderEditor();
+      }
+      $('lib-raw').textContent = LIBRARY ? JSON.stringify(LIBRARY, null, 2) : '';
+    }
 
     function renumber(lib) {
-      let bn = 0;
-      const pad = (n) => String(n).padStart(3, '0');
+      let bn = 0; const pad = (n) => String(n).padStart(3, '0');
       (lib.education || []).forEach((e, i) => { e.id = `edu_${pad(i + 1)}`; });
       (lib.experiences || []).forEach((e, i) => { e.id = `exp_${pad(i + 1)}`; (e.bullets || []).forEach((b) => { bn++; b.id = `bullet_${pad(bn)}`; }); });
       (lib.projects || []).forEach((p, i) => { p.id = `proj_${pad(i + 1)}`; (p.bullets || []).forEach((b) => { bn++; b.id = `bullet_${pad(bn)}`; }); });
     }
 
-    async function parseResume() {
+    async function parseResume(mode) {
       $('lib-error').textContent = '';
       const file = $('resumeFile').files[0];
       const text = $('resumeText').value.trim();
-      if (!file && !text) { $('lib-error').textContent = 'Upload a file or paste resume text first.'; return; }
-      const mode = document.querySelector('input[name=mode]:checked').value;
-      const btn = $('buildBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Parsing…';
+      if (mode === 'replace' && !file && !text) { $('lib-error').textContent = 'Choose a resume file (or paste text) first.'; return; }
+      if (mode === 'append' && !text && !file) { $('lib-error').textContent = 'Paste the new experience text to append.'; return; }
+      const btn = mode === 'replace' ? $('parseReplaceBtn') : $('parseAppendBtn');
+      const label = btn.textContent; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Parsing…';
       try {
         const fd = new FormData();
-        if (file) fd.append('file', file);
+        if (file && mode === 'replace') fd.append('file', file);
+        if (file && mode === 'append' && !text) fd.append('file', file);
         if (text) fd.append('resume_text', text);
         fd.append('mode', mode);
         const r = await fetch('/materials/ingest', { method: 'POST', body: fd });
         const data = await r.json();
         if (!r.ok) { $('lib-error').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
-        LIBRARY = data;
-        $('lib-editor-wrap').style.display = 'block';
-        renderEditor();
-        $('lib-hint').textContent = mode === 'append' ? 'Merged into your saved library — review & Save.' : 'Parsed — review, edit, then Save.';
-        $('save-hint').textContent = '';
-      } catch (e) {
-        $('lib-error').textContent = 'Request failed: ' + e.message;
-      } finally { btn.disabled = false; btn.textContent = 'Parse resume'; }
+        LIBRARY = data; LIB_VIEW = 'compact'; renderLibrary();
+        $('lib-hint').textContent = mode === 'append' ? 'Appended — review & Save.' : 'Parsed — review & Save.';
+        if (mode === 'append') $('resumeText').value = '';
+      } catch (e) { $('lib-error').textContent = 'Request failed: ' + e.message; }
+      finally { btn.disabled = false; btn.textContent = label; }
     }
 
     async function saveLibrary() {
       if (!LIBRARY) return;
-      renumber(LIBRARY); renderEditor();
+      renumber(LIBRARY); renderLibrary();
       const btn = $('saveLibBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving…';
       try {
         const r = await fetch('/materials', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(LIBRARY) });
         const data = await r.json();
         if (!r.ok) { $('lib-error').textContent = `Save error: ${data.detail || JSON.stringify(data)}`; return; }
-        $('save-hint').textContent = '✓ Saved. Selection now uses your library.';
+        $('save-hint').textContent = '✓ Saved. Tailoring now uses your library.';
         await refreshStatus();
-      } catch (e) {
-        $('lib-error').textContent = 'Request failed: ' + e.message;
-      } finally { btn.textContent = 'Save library'; btn.disabled = false; }
+      } catch (e) { $('lib-error').textContent = 'Request failed: ' + e.message; }
+      finally { btn.textContent = 'Save'; btn.disabled = false; }
     }
 
     async function loadExistingLibrary(health) {
       if (health && health.materials_source === 'user') {
-        try {
-          LIBRARY = await (await fetch('/materials')).json();
-          $('lib-editor-wrap').style.display = 'block';
-          renderEditor();
-          $('lib-hint').textContent = 'Loaded your saved library.';
-        } catch (e) { /* ignore */ }
+        try { LIBRARY = await (await fetch('/materials')).json(); LIB_VIEW = 'compact'; renderLibrary(); $('lib-hint').textContent = 'Loaded your saved library.'; } catch (e) {}
       }
     }
 
-    // =================== JD + SELECTION ===================
+    // =============== TAILOR (JD) ===============
     function renderChips(el, items, cls) {
       el.innerHTML = '';
-      (items || []).forEach((t) => { el.appendChild(h('span', { class: 'chip ' + (cls || '') }, t)); });
+      (items || []).forEach((t) => el.appendChild(h('span', { class: 'chip ' + (cls || '') }, t)));
       if (!items || !items.length) el.innerHTML = '<span class="muted" style="font-size:12px;">—</span>';
     }
     function renderResult(p) {
-      $('r-title').textContent = p.job_title || '—';
-      $('r-company').textContent = p.company || '';
+      $('r-title').textContent = p.job_title || '—'; $('r-company').textContent = p.company || '';
       renderChips($('r-cats'), [p.primary_category + ' (primary)', ...(p.secondary_categories || [])], 'cat');
       $('r-tone').textContent = p.tone_hints || '—';
       renderChips($('r-keywords'), p.keywords_for_highlight, 'kw');
       renderChips($('r-skills'), p.key_skills, '');
-      const ul = $('r-resp'); ul.innerHTML = '';
-      (p.key_responsibilities || []).forEach((t) => ul.appendChild(h('li', {}, t)));
-      $('r-raw').textContent = JSON.stringify(p, null, 2);
-      $('result').style.display = 'block';
+      const ul = $('r-resp'); ul.innerHTML = ''; (p.key_responsibilities || []).forEach((t) => ul.appendChild(h('li', {}, t)));
+      $('r-raw').textContent = JSON.stringify(p, null, 2); $('result').style.display = 'block';
     }
     let MATERIALS_MAP = {};
     async function loadMaterialsMap() {
       try {
-        const m = await (await fetch('/materials')).json();
-        MATERIALS_MAP = {};
+        const m = await (await fetch('/materials')).json(); MATERIALS_MAP = {};
         (m.experiences || []).forEach((e) => { MATERIALS_MAP[e.id] = { title: e.title, org: e.organization, kind: 'Experience' }; });
         (m.projects || []).forEach((p) => { MATERIALS_MAP[p.id] = { title: p.title, org: '', kind: 'Project' }; });
-      } catch (e) { /* ignore */ }
+      } catch (e) {}
     }
     function renderSelection(sel) {
       const groups = [...(sel.selected_experiences || []), ...(sel.selected_projects || [])];
@@ -495,14 +556,10 @@ versions in production is required. Fast-paced startup environment.`;
           h('span', { class: 'exp-meta' }, meta.org || '')));
         (g.selected_bullets || []).forEach((b) => {
           n++;
-          const text = b.original_text || b.source_bullet_id;
-          const row = h('div', { class: 'bullet' },
+          block.appendChild(h('div', { class: 'bullet' },
             h('span', { class: 'score-badge ' + (b.score > 0 ? '' : 'zero') }, String(b.score)),
-            h('div', { class: 'bullet-body' }, h('div', { class: 'bullet-text' }, text),
-              (b.matched_keywords || []).length
-                ? h('div', { class: 'bullet-kw chips' }, b.matched_keywords.map((k) => h('span', { class: 'chip kw' }, k)))
-                : null));
-          block.appendChild(row);
+            h('div', { class: 'bullet-body' }, h('div', { class: 'bullet-text' }, b.original_text || b.source_bullet_id),
+              (b.matched_keywords || []).length ? h('div', { class: 'bullet-kw chips' }, b.matched_keywords.map((k) => h('span', { class: 'chip kw' }, k))) : null)));
         });
         body.appendChild(block);
       });
@@ -511,8 +568,7 @@ versions in production is required. Fast-paced startup environment.`;
       $('selection').style.display = groups.length ? 'block' : 'none';
     }
     async function analyze() {
-      const jd = $('jd').value.trim();
-      $('error').textContent = '';
+      const jd = $('jd').value.trim(); $('error').textContent = '';
       if (!jd) { $('error').textContent = 'Please paste a job description first.'; return; }
       const btn = $('analyzeBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Working…';
       $('result').style.display = 'none'; $('selection').style.display = 'none';
@@ -527,21 +583,18 @@ versions in production is required. Fast-paced startup environment.`;
         const sel = await sr.json();
         if (!sr.ok) { $('error').textContent = `Selection error ${sr.status}: ${sel.detail || JSON.stringify(sel)}`; return; }
         renderSelection(sel);
-      } catch (e) {
-        $('error').textContent = 'Request failed: ' + e.message;
-      } finally { btn.disabled = false; btn.textContent = 'Analyze & Select'; }
+      } catch (e) { $('error').textContent = 'Request failed: ' + e.message; }
+      finally { btn.disabled = false; btn.textContent = 'Analyze & Select'; }
     }
 
-    // =================== INIT ===================
-    $('buildBtn').addEventListener('click', parseResume);
+    // =============== INIT ===============
+    $('parseReplaceBtn').addEventListener('click', () => parseResume('replace'));
+    $('parseAppendBtn').addEventListener('click', () => parseResume('append'));
     $('saveLibBtn').addEventListener('click', saveLibrary);
+    $('toggleViewBtn').addEventListener('click', () => { LIB_VIEW = LIB_VIEW === 'compact' ? 'edit' : 'compact'; renderLibrary(); });
     $('analyzeBtn').addEventListener('click', analyze);
     $('sampleBtn').addEventListener('click', () => { $('jd').value = SAMPLE_JD; });
-    (async () => {
-      const health = await refreshStatus();
-      await loadMaterialsMap();
-      await loadExistingLibrary(health);
-    })();
+    (async () => { const health = await refreshStatus(); await loadMaterialsMap(); await loadExistingLibrary(health); })();
   </script>
 </body>
 </html>
