@@ -36,14 +36,14 @@
 - [x] 初版 `README.md`
 - **验收标准：** ✅ 全部通过 —— app 启动 + `/health` 返回 200；`materials.sample.json` 通过 schema 校验；pytest 5/5 通过。
 
-### M2 — JD 分析模块 (Step 2)  ✅ 完成（待真实 key 跑一次端到端）
+### M2 — JD 分析模块 (Step 2)  ✅ 完成（含真实 key 端到端验证）
 **目标：** JD 原文 → 结构化 JD 画像。
 - [x] `llm/client.py`：封装 Anthropic 调用，支持 JSON 解析（容错代码围栏）+ 重试 + **可注入 mock responder**
 - [x] prompt 模板（`llm/prompts/jd_analysis.py`）：约束只输出 JSON、category 枚举固定 `[AI,DS,DE,MLE,SDE]`
 - [x] `pipeline/step2_jd_analysis.py`：返回 `JDProfile`
 - [x] `POST /jd/analyze` 接口
 - **验收标准：** ✅ mock 下返回合法 `JDProfile`；坏 category 被拒；无 key → 503 清晰报错；空输入 → 422。pytest 11/11。
-- **待办（需用户 key）：** 填好 `.env` 后用真实 JD 跑一次 `/jd/analyze` 确认真实模型输出可解析。
+- **真实验证：** ✅ 2026-06-14 用真实 JD（Acme Robotics MLE）跑通，输出干净解析为 `JDProfile`，primary=MLE/secondary=[AI,DE]。
 
 ### M3 — 经历匹配与筛选模块 (Step 3)  ⬅️ 下一阶段
 **目标：** JD 画像 + 素材库 → 初步筛选结果（未改写）。
@@ -109,6 +109,7 @@
 - 一页但内容偏少时自动补充内容（Step 6.4 的 TODO）
 
 ## 当前阻塞 / 待用户提供
-- [ ] 设置 `ANTHROPIC_API_KEY`（M2 起需要）
+- [x] 设置 `ANTHROPIC_API_KEY`（M2 起需要）—— 已配置，真实调用通过
+- [x] GitHub 远程仓库 —— 已连 `js3888-shunshun/resume-tailor-tool`，分支 main
 - [ ] 安装 tectonic 或 pdflatex（M5 起需要）
 - [ ] 提供现有简历的 `.tex` 源文件作为简历模板蓝本（M5 需要）
