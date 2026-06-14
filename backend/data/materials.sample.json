@@ -1,0 +1,118 @@
+{
+  "personal_info": {
+    "name": "Jane Doe",
+    "email": "js3888@cornell.edu",
+    "phone": "+1-607-555-0123",
+    "links": [
+      "https://github.com/janedoe",
+      "https://linkedin.com/in/janedoe"
+    ]
+  },
+  "education": [
+    {
+      "id": "edu_001",
+      "school": "Cornell University",
+      "degree": "Master of Engineering",
+      "major": "Computer Science",
+      "start_date": "2024-08",
+      "end_date": "2025-12",
+      "details": [
+        "GPA: 3.9/4.0",
+        "Coursework: Machine Learning, Distributed Systems, NLP"
+      ]
+    },
+    {
+      "id": "edu_002",
+      "school": "State University",
+      "degree": "Bachelor of Science",
+      "major": "Statistics",
+      "start_date": "2020-08",
+      "end_date": "2024-05",
+      "details": [
+        "Minor in Computer Science"
+      ]
+    }
+  ],
+  "experiences": [
+    {
+      "id": "exp_001",
+      "title": "Machine Learning Engineer Intern",
+      "organization": "Acme AI",
+      "location": "San Francisco, CA",
+      "start_date": "2025-06",
+      "end_date": "2025-08",
+      "categories": ["AI", "MLE", "DS"],
+      "bullets": [
+        {
+          "id": "bullet_001",
+          "text": "Built a retrieval-augmented generation pipeline using Python and PyTorch that reduced customer support response time by 35%.",
+          "skill_tags": ["Python", "PyTorch", "RAG", "LLM"],
+          "impact_metrics": "reduced response time by 35%",
+          "priority": 3
+        },
+        {
+          "id": "bullet_002",
+          "text": "Fine-tuned transformer models on 200k labeled examples, improving classification F1 from 0.81 to 0.89.",
+          "skill_tags": ["Transformers", "Fine-tuning", "NLP"],
+          "impact_metrics": "F1 0.81 -> 0.89",
+          "priority": 3
+        },
+        {
+          "id": "bullet_003",
+          "text": "Containerized model serving with Docker and deployed to Kubernetes, handling 1M+ daily inference requests.",
+          "skill_tags": ["Docker", "Kubernetes", "MLOps"],
+          "impact_metrics": "1M+ daily requests",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "id": "exp_002",
+      "title": "Data Engineering Intern",
+      "organization": "DataCorp",
+      "location": "Remote",
+      "start_date": "2024-06",
+      "end_date": "2024-08",
+      "categories": ["DE", "DS"],
+      "bullets": [
+        {
+          "id": "bullet_004",
+          "text": "Designed and maintained ETL pipelines in Airflow processing 5TB of daily event data into a Snowflake warehouse.",
+          "skill_tags": ["Airflow", "ETL", "Snowflake", "SQL"],
+          "impact_metrics": "5TB daily",
+          "priority": 3
+        },
+        {
+          "id": "bullet_005",
+          "text": "Optimized Spark jobs to cut nightly batch runtime by 40%, saving an estimated $20k/year in compute costs.",
+          "skill_tags": ["Spark", "Optimization", "Big Data"],
+          "impact_metrics": "40% faster, $20k/year saved",
+          "priority": 2
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj_001",
+      "title": "Personal AI Resume Tailor",
+      "categories": ["AI", "MLE", "SDE"],
+      "bullets": [
+        {
+          "id": "bullet_006",
+          "text": "Developed a FastAPI agent that tailors resumes to job descriptions using the Anthropic Claude API and an iterative LaTeX compile-and-fix loop.",
+          "skill_tags": ["FastAPI", "Claude API", "LaTeX", "Agents"],
+          "impact_metrics": null,
+          "priority": 2
+        }
+      ]
+    }
+  ],
+  "skills": [
+    { "name": "Python", "categories": ["AI", "MLE", "DS", "DE", "SDE"], "proficiency": "expert" },
+    { "name": "PyTorch", "categories": ["AI", "MLE"], "proficiency": "advanced" },
+    { "name": "SQL", "categories": ["DE", "DS"], "proficiency": "advanced" },
+    { "name": "Docker", "categories": ["MLE", "SDE", "DE"], "proficiency": "intermediate" },
+    { "name": "Airflow", "categories": ["DE"], "proficiency": "intermediate" }
+  ]
+}

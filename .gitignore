@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Env & secrets
+.env
+
+# User data (keep sample, ignore real)
+backend/data/materials.json
+
+# Build output
+backend/output/
+*.pdf
+*.aux
+*.log
+*.out
+
+# Frontend
+node_modules/
+dist/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
