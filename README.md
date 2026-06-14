@@ -1,67 +1,88 @@
 # AI Resume Tailor
 
-根据目标岗位 JD，从个人"经历素材库"中自动挑选并改写最相关的经历，生成一份严格一页的定制简历 PDF（LaTeX）和对应的 cover letter。同时是一个学习 AI agent 概念的项目，核心是 Step 6 的"编译-检查-修正"循环。
+Given a target job description (JD), automatically selects and rewrites the most
+relevant experiences from a personal "material library" to generate a strictly
+one-page tailored resume PDF (LaTeX) and a matching cover letter. It is also a
+project for learning AI-agent concepts — the core is the Step 6
+"compile-check-fix" loop.
 
-> 开发主线见 [`ROADMAP.md`](./ROADMAP.md)。每个阶段都有可验证的 milestone。
+> Development mainline: see [`ROADMAP.md`](./ROADMAP.md). Every phase has a
+> verifiable milestone.
 
-## 项目结构
+## Project structure
 
 ```
 job application tool/
-├── ROADMAP.md              # 主线控制文件
+├── ROADMAP.md              # mainline source of truth
 ├── requirements.txt
 ├── .env.example
 └── backend/
     ├── app/
-    │   ├── main.py         # FastAPI 入口 (/health, 启动检测)
-    │   ├── config.py       # 读取 .env
-    │   ├── latex_tools.py  # 检测 tectonic/pdflatex
-    │   ├── materials_store.py   # Step 1: 素材库读写校验
-    │   └── schemas/        # 全部 Pydantic 模型
+    │   ├── main.py         # FastAPI entrypoint (/health, /jd/analyze, startup checks)
+    │   ├── config.py       # reads .env
+    │   ├── latex_tools.py  # detects tectonic/pdflatex
+    │   ├── materials_store.py   # Step 1: material library read/write/validate
+    │   ├── schemas/        # all Pydantic models
+    │   ├── llm/            # centralized LLM client + prompt templates
+    │   ├── pipeline/       # pipeline steps (Step 2..7)
+    │   └── routers/        # FastAPI routers
     ├── data/
-    │   └── materials.sample.json   # 开发用示例素材库
+    │   └── materials.sample.json   # sample library for development
     └── tests/
 ```
 
-## 环境依赖
+## Requirements
 
-- Python 3.11+（已在 3.13 测试）
-- Node 18+（前端，M8 才需要）
-- LaTeX 引擎（M5 起需要）：推荐 **Tectonic**（单文件，自动下载宏包）
-  - `winget install TectonicProject.Tectonic` 或 `scoop install tectonic`
-  - 备选 MiKTeX（提供 pdflatex）：https://miktex.org/download
+- Python 3.11+ (tested on 3.13)
+- Node 18+ (frontend, only needed at M8)
+- A LaTeX engine (needed from M5): **Tectonic** recommended (single binary,
+  auto-fetches packages)
+  - `winget install TectonicProject.Tectonic` or `scoop install tectonic`
+  - Alternative: MiKTeX (provides pdflatex): https://miktex.org/download
 
-## 快速开始
+## Quick start
 
 ```powershell
-# 1. 创建虚拟环境并安装依赖
+# 1. Create a virtual environment and install dependencies
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# 2. 配置 API key（M2 起需要）
+# 2. Configure the API key (needed from M2)
 Copy-Item .env.example .env
-# 编辑 .env 填入 ANTHROPIC_API_KEY
+# Edit .env and set ANTHROPIC_API_KEY
 
-# 3. 启动后端
+# 3. Start the backend
 cd backend
 uvicorn app.main:app --reload
 
-# 4. 健康检查
-# 浏览器或 curl 访问 http://127.0.0.1:8000/health
+# 4. Open the interactive API docs
+# Browser: http://127.0.0.1:8000/docs
+# Health check: http://127.0.0.1:8000/health
 ```
 
-## 准备素材库
+## Testing the JD analysis endpoint (M2)
 
-Phase 1 由用户手动整理 `backend/data/materials.json`（schema 见 `backend/app/schemas/materials.py`）。未创建时系统自动回退到 `materials.sample.json`，可先用示例数据跑通流程。
+There is no frontend yet (that is milestone M8). Use the built-in Swagger UI:
 
-## 运行测试
+1. Start the backend (`uvicorn app.main:app --reload` from `backend/`).
+2. Open http://127.0.0.1:8000/docs
+3. Expand `POST /jd/analyze`, click **Try it out**, paste a real JD into
+   `jd_text`, and click **Execute**. The structured `JDProfile` is returned.
+
+## Preparing the material library
+
+In Phase 1 the user hand-authors `backend/data/materials.json` (schema in
+`backend/app/schemas/materials.py`). If it does not exist, the system falls back
+to `materials.sample.json`, so you can run the pipeline with sample data first.
+
+## Running tests
 
 ```powershell
 cd backend
 pytest
 ```
 
-## 当前进度
+## Current progress
 
-见 `ROADMAP.md` 的"进度日志"。当前：**M1 项目骨架**。
+See the Changelog in `ROADMAP.md`. Current: **M2 done; M3 next**.

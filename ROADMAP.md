@@ -1,115 +1,142 @@
-# AI Resume Tailor — 开发路线图 (ROADMAP)
+# AI Resume Tailor — Development Roadmap
 
-> 这是本项目的**主线控制文件 (single source of truth)**。
-> 每次开发前先读它确认当前所在阶段，开发后更新对应复选框与"进度日志"。
-> 任何偏离主线的想法先记到 "Backlog / 未来扩展"，不要直接插入当前里程碑。
+> This is the project's **single source of truth**.
+> Before each work session, read it to confirm the current milestone; after each
+> session, update the relevant checkboxes and the Changelog.
+> Off-mainline ideas go to "Backlog / Future" — do not inject them into the
+> current milestone.
 
-**项目一句话定义：** 输入目标岗位 JD + 用户素材库 → 自动挑选/改写最相关经历 → 产出严格一页的定制简历 PDF 和对应 cover letter；同时作为学习 AI agent 概念的载体（核心是 Step 6 的"编译-检查-修正"循环）。
+**One-line definition:** Given a target job description (JD) plus the user's
+material library, automatically select and rewrite the most relevant experiences
+to produce a strictly one-page tailored resume PDF (LaTeX) and a matching cover
+letter. It also serves as a vehicle for learning AI-agent concepts — the core is
+the Step 6 "compile-check-fix" loop.
 
-**Phase 1 (MVP) 边界：**
-- ✅ 做：JD 分析、经历筛选、内容改写、LaTeX 渲染、一页编译循环、cover letter。
-- ❌ 不做：LinkedIn cold message、公司信息搜索、embedding 检索、上传简历自动拆解。
-  （这些只在数据结构/代码接口上预留扩展点。）
-
----
-
-## 总体原则（每个里程碑都要遵守）
-
-1. 每个 pipeline step = 独立模块/函数，输入输出严格用 Pydantic schema，可单独测试。
-2. 所有 LLM 调用集中在 `llm` 模块；prompt 模板单独存放为文件/常量。
-3. "打分函数""检索"等易替换部分要抽成单独函数，方便日后换成 embedding。
-4. 变量名/函数名一律英文；注释可中英混合。
-5. 每完成一个里程碑，跑通它的"验收标准"才算 done，并在本文件打勾 + 写进度日志。
+**Phase 1 (MVP) boundaries:**
+- ✅ In scope: JD analysis, experience selection, content rewriting, LaTeX
+  rendering, one-page compile loop, cover letter.
+- ❌ Out of scope: LinkedIn cold messages, company-info search, embedding
+  retrieval, upload-resume auto-decompose. (Only leave extension points for
+  these in the data structures / code interfaces.)
 
 ---
 
-## 阶段与里程碑
+## Guiding principles (apply to every milestone)
 
-### M1 — 项目骨架 + Schema + 示例数据  ✅ 完成
-**目标：** 搭好可运行的后端骨架，定义全部 Pydantic 模型，准备示例素材库。
-- [x] 项目目录结构 + git 初始化 + `.gitignore` + `.env.example`
-- [x] `requirements.txt`（fastapi, uvicorn, anthropic, pydantic, jinja2, pypdf, pytest 等）
-- [x] 全部 schema 的 Pydantic 模型：materials / jd_profile / selection
-- [x] 一份合法的示例 `materials.sample.json`（用于全程开发测试）
-- [x] FastAPI app 骨架 + `GET /health` + 启动时检测 pdflatex/tectonic 并打印提示
-- [x] `config.py` 读取 `.env`（API key、模型名、路径）
-- [x] 初版 `README.md`
-- **验收标准：** ✅ 全部通过 —— app 启动 + `/health` 返回 200；`materials.sample.json` 通过 schema 校验；pytest 5/5 通过。
+1. Each pipeline step = an independent module/function with strict Pydantic
+   schema I/O, individually testable.
+2. All LLM calls go through the `llm` module; prompt templates live in separate
+   files/constants.
+3. Easily-swappable parts (scoring, retrieval) are isolated functions so they can
+   later be replaced (e.g. embeddings).
+4. Variable/function names in English; comments may be mixed CN/EN. **All `.md`
+   docs are English-only.**
+5. A milestone is "done" only when its acceptance criteria pass; then tick the
+   boxes here and append a Changelog entry.
 
-### M2 — JD 分析模块 (Step 2)  ✅ 完成（含真实 key 端到端验证）
-**目标：** JD 原文 → 结构化 JD 画像。
-- [x] `llm/client.py`：封装 Anthropic 调用，支持 JSON 解析（容错代码围栏）+ 重试 + **可注入 mock responder**
-- [x] prompt 模板（`llm/prompts/jd_analysis.py`）：约束只输出 JSON、category 枚举固定 `[AI,DS,DE,MLE,SDE]`
-- [x] `pipeline/step2_jd_analysis.py`：返回 `JDProfile`
-- [x] `POST /jd/analyze` 接口
-- **验收标准：** ✅ mock 下返回合法 `JDProfile`；坏 category 被拒；无 key → 503 清晰报错；空输入 → 422。pytest 11/11。
-- **真实验证：** ✅ 2026-06-14 用真实 JD（Acme Robotics MLE）跑通，输出干净解析为 `JDProfile`，primary=MLE/secondary=[AI,DE]。
+---
 
-### M3 — 经历匹配与筛选模块 (Step 3)  ⬅️ 下一阶段
-**目标：** JD 画像 + 素材库 → 初步筛选结果（未改写）。
-- [ ] category 交集过滤出候选池
-- [ ] `scoring.py`：独立打分函数（关键词重合度），**可替换接口**
-- [ ] 按 分数+priority 排序，控制每段经历 bullet 数（可传 `target_bullet_count`）
-- [ ] 输出 `SelectionResult`（pre-rewrite）
-- **验收标准：** 纯函数，无需 LLM 即可单测；给定 mock JD 画像能稳定选出预期 bullet；打分函数有独立单测。
+## Milestones
 
-### M4 — 内容改写模块 (Step 4)
-**目标：** 选中 bullets + JD 画像 → 改写后结果（带 matched_keywords）。
-- [ ] 批量打包 bullets 一次 LLM 调用，返回 JSON 数组
-- [ ] prompt 约束：不编造、用 JD 关键词、长度相近、标注命中关键词
-- [ ] 输出符合"经历筛选与改写结果 Schema"
-- **验收标准：** 改写结果长度与原文相近；`matched_keywords` 只含确实出现的关键词；schema 校验通过。
+### M1 — Skeleton + Schema + Sample data  ✅ Done
+**Goal:** A runnable backend skeleton, all Pydantic models, a sample library.
+- [x] Project layout + git init + `.gitignore` + `.env.example`
+- [x] `requirements.txt` (fastapi, uvicorn, anthropic, pydantic, jinja2, pypdf, pytest, ...)
+- [x] All Pydantic schemas: materials / jd_profile / selection
+- [x] A valid sample `materials.sample.json` (used for development throughout)
+- [x] FastAPI skeleton + `GET /health` + startup detection of pdflatex/tectonic
+- [x] `config.py` reads `.env` (API key, model, paths)
+- [x] Initial `README.md`
+- **Acceptance:** ✅ All passed — app boots and `/health` returns 200;
+  `materials.sample.json` validates; pytest 5/5.
 
-### M5 — LaTeX 模板 + 渲染模块 (Step 5)
-**目标：** 改写结果 → `.tex` 文件（先不管页数）。
-- [ ] `resume.tex.j2` 模板（基于用户现有简历样式）
-- [ ] Jinja2 环境 + 自定义 LaTeX 转义过滤器（`& % _ # $` 等）
-- [ ] 关键词高亮：preamble 定义 `\hlkw`，渲染时包裹 matched_keywords
-- [ ] 输出 `.tex` 到临时目录
-- **验收标准：** 能渲染出合法 `.tex`；含特殊字符的 bullet 不破坏编译；若已装 latex 能生成 PDF。
-- **⚠️ 依赖：** 需要安装 tectonic（推荐，单文件免装 TeX 发行版）或 pdflatex；需要用户提供现有简历 `.tex` 作为模板蓝本。
+### M2 — JD analysis module (Step 2)  ✅ Done (incl. real-key end-to-end)
+**Goal:** Raw JD text → structured JD profile.
+- [x] `llm/client.py`: wraps the Anthropic call, JSON parsing (tolerates code
+  fences) + retry + **injectable mock responder**
+- [x] Prompt template (`llm/prompts/jd_analysis.py`): JSON-only, category enum
+  fixed to `[AI, DS, DE, MLE, SDE]`
+- [x] `pipeline/step2_jd_analysis.py`: returns `JDProfile`
+- [x] `POST /jd/analyze` endpoint
+- **Acceptance:** ✅ Mock returns a valid `JDProfile`; bad category rejected;
+  no key → 503 clear error; empty input → 422. pytest 11/11.
+- **Real verification:** ✅ 2026-06-14 ran a real JD (Acme Robotics MLE),
+  output parsed cleanly into `JDProfile`, primary=MLE / secondary=[AI, DE].
 
-### M6 — 编译 + 一页校验循环 (Step 6, 核心 agent 循环)
-**目标：** `.tex` → 编译 → 检查页数 → 超长则压缩重试，状态机/循环实现。
-- [ ] 编译封装（捕获日志/错误）
-- [ ] pypdf 读页数
-- [ ] 超过 1 页：挑最长/最低 priority 的 bullet → LLM 压缩 → 重渲染重编译
-- [ ] 最大迭代次数（默认 5），超限返回当前最优 + 提示
-- [ ] 编译失败：捕获日志，定位疑似转义问题，详细记录
-- [ ] 每次迭代输入/输出/状态变化都有结构化日志
-- **验收标准：** 故意塞超长内容能在 ≤5 次迭代内压到一页或明确报告失败；全过程有可读日志；编译错误能定位到具体内容。
+### M3 — Experience matching & selection (Step 3)  ⬅️ Next
+**Goal:** JD profile + material library → preliminary selection (no rewrite yet).
+- [ ] Category-intersection filter to build the candidate pool
+- [ ] `scoring.py`: standalone scoring function (keyword overlap), **swappable interface**
+- [ ] Sort by score + priority, cap bullets per experience (configurable `target_bullet_count`)
+- [ ] Output `SelectionResult` (pre-rewrite)
+- **Acceptance:** Pure functions, unit-testable without an LLM; given a mock JD
+  profile, stably selects the expected bullets; scoring function has its own test.
 
-### M7 — Cover Letter 生成 (Step 7)
-**目标：** JD 画像 + 改写经历摘要 + 基本信息 → cover letter PDF。
-- [ ] LLM 生成正文；预留 `company_context` 字段（Phase 2 用）
-- [ ] 独立简单 LaTeX 模板 + 同样的转义
-- [ ] 渲染编译成 PDF
-- **验收标准：** 生成结构合理的 cover letter PDF；特殊字符不破坏编译。
+### M4 — Content rewriting module (Step 4)
+**Goal:** Selected bullets + JD profile → rewritten results (with matched_keywords).
+- [ ] Batch all bullets into one LLM call, return a JSON array
+- [ ] Prompt constraints: no fabrication, use JD keywords, similar length, label matched keywords
+- [ ] Output conforms to the selection & rewrite schema
+- **Acceptance:** Rewritten length close to original; `matched_keywords` only
+  contains keywords actually present; schema validates.
 
-### M8 — 前端整合 + 串联 `/generate`
-**目标：** 打通端到端流程并最简前端展示。
-- [ ] `POST /generate`：串联 Step 2-7，返回两个 PDF 链接 + 中间结果
+### M5 — LaTeX template + rendering (Step 5)
+**Goal:** Rewrite result → `.tex` file (page count not yet handled).
+- [ ] `resume.tex.j2` template (based on the user's existing resume style)
+- [ ] Jinja2 env + custom LaTeX-escape filter (`& % _ # $`, etc.)
+- [ ] Keyword highlight: define `\hlkw` in preamble, wrap matched_keywords
+- [ ] Output `.tex` to a temp directory
+- **Acceptance:** Renders valid `.tex`; bullets with special chars don't break
+  compilation; if LaTeX is installed, produces a PDF.
+- **⚠️ Dependency:** Need tectonic (recommended, single binary) or pdflatex;
+  need the user's existing resume `.tex` as the template blueprint.
+
+### M6 — Compile + one-page check loop (Step 6, core agent loop)
+**Goal:** `.tex` → compile → check page count → compress & retry if too long,
+implemented as a state machine / loop.
+- [ ] Compile wrapper (capture logs/errors)
+- [ ] Read page count via pypdf
+- [ ] > 1 page: pick longest / lowest-priority bullets → LLM compress → re-render & re-compile
+- [ ] Max iterations (default 5); on exceed, return best-effort + notice
+- [ ] Compile failure: capture log, locate suspected escape issue, log in detail
+- [ ] Structured logging of every iteration's input/output/state change
+- **Acceptance:** Deliberately oversized content compresses to one page within
+  ≤5 iterations or reports failure clearly; readable logs throughout; compile
+  errors traceable to specific content.
+
+### M7 — Cover letter generation (Step 7)
+**Goal:** JD profile + rewritten experience summary + basic info → cover letter PDF.
+- [ ] LLM generates the body; reserve a `company_context` field (Phase 2)
+- [ ] Separate simple LaTeX template + same escaping
+- [ ] Render & compile to PDF
+- **Acceptance:** Produces a structurally sound cover letter PDF; special chars
+  don't break compilation.
+
+### M8 — Frontend integration + `/generate` wiring
+**Goal:** End-to-end flow plus a minimal frontend.
+- [ ] `POST /generate`: chain Step 2-7, return two PDF links + intermediate results
 - [ ] `GET /materials` / `PUT /materials`
-- [ ] 前端（Vite React 最简版）：JD 输入框 → 展示 JD 画像/筛选结果 → 下载 PDF
-- **验收标准：** 从前端粘贴 JD，点一次按钮，能看到中间结果并下载两个 PDF。
+- [ ] Frontend (minimal Vite React): JD input → show JD profile / selection → download PDFs
+- **Acceptance:** From the frontend, paste a JD, click once, see intermediate
+  results and download both PDFs.
 
 ---
 
-## 进度日志 (Changelog)
-> 倒序记录。格式：`日期 — 里程碑 — 做了什么 / 验收结果`
-- 2026-06-14 — M2 — ✅ 完成（mock 验收）。新增可注入 mock 的 `LLMClient`（JSON 解析+围栏容错+重试）、`jd_analysis` prompt、`step2_jd_analysis.analyze_jd`、`POST /jd/analyze`。pytest 11/11；无 key→503，空输入→422。真实 key 端到端待用户填 `.env` 后跑。
-- 2026-06-14 — M1 — ✅ 完成。骨架 + 3 组 Pydantic schema + 示例素材库 + FastAPI `/health` + 启动检测。venv 装好依赖，pytest 5/5 通过，`/health` 返回 200。已 git 初始化并提交 (c0cb74e)。
-- 2026-06-14 — M1 — 启动项目，创建 ROADMAP。环境已确认（Python3.13/Node24/Git ok；缺 latex 与 API key）。
+## Changelog
+> Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M2 — ✅ Real-key end-to-end verified with a synthetic MLE JD; output parsed cleanly into `JDProfile` (primary=MLE, secondary=[AI,DE]). Connected GitHub remote `js3888-shunshun/resume-tailor-tool` (branch main), pushed all commits.
+- 2026-06-14 — M2 — ✅ Done (mock acceptance). Added injectable-mock `LLMClient` (JSON parse + fence tolerance + retry), `jd_analysis` prompt, `step2_jd_analysis.analyze_jd`, `POST /jd/analyze`. pytest 11/11; no key→503, empty→422.
+- 2026-06-14 — M1 — ✅ Done. Skeleton + 3 Pydantic schema groups + sample library + FastAPI `/health` + startup detection. venv created, pytest 5/5, `/health` 200. git initialized & committed (c0cb74e).
 
-## Backlog / 未来扩展（Phase 2+，先别做）
-- LinkedIn cold message 生成
-- 公司信息搜索注入 cover letter（`company_context`）
-- embedding 语义检索替换关键词打分（替换 `scoring.py`）
-- 上传现有简历 → LLM 自动拆解填充素材库
-- 一页但内容偏少时自动补充内容（Step 6.4 的 TODO）
+## Backlog / Future (Phase 2+, do not build yet)
+- LinkedIn cold message generation
+- Company-info search injected into the cover letter (`company_context`)
+- Embedding semantic retrieval to replace keyword scoring (swap `scoring.py`)
+- Upload existing resume → LLM auto-decompose into the material library
+- Auto-add content when one page but visibly sparse (the Step 6.4 TODO)
 
-## 当前阻塞 / 待用户提供
-- [x] 设置 `ANTHROPIC_API_KEY`（M2 起需要）—— 已配置，真实调用通过
-- [x] GitHub 远程仓库 —— 已连 `js3888-shunshun/resume-tailor-tool`，分支 main
-- [ ] 安装 tectonic 或 pdflatex（M5 起需要）
-- [ ] 提供现有简历的 `.tex` 源文件作为简历模板蓝本（M5 需要）
+## Current blockers / awaiting user
+- [x] Set `ANTHROPIC_API_KEY` (needed from M2) — configured, real call verified
+- [x] GitHub remote — connected `js3888-shunshun/resume-tailor-tool`, branch main
+- [ ] Install tectonic or pdflatex (needed from M5)
+- [ ] Provide the existing resume `.tex` source as the resume-template blueprint (needed for M5)
