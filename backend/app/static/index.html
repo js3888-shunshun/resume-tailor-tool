@@ -154,13 +154,16 @@
     @media (max-width:720px){ .rw-cols { grid-template-columns:1fr; } }
     .rw-collabel { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; margin-bottom:4px; }
     .rw-collabel.after { color:var(--accent); }
-    .rw-col ul { margin:0; padding-left:18px; }
-    .rw-col li { font-size:12.5px; margin-bottom:4px; line-height:1.45; }
-    .rw-old li { color:var(--muted); }
-    .rw-after-row { display:flex; gap:6px; align-items:flex-start; margin-bottom:6px; }
-    .rw-after-row textarea { min-height:40px; font-family:inherit; font-size:12.5px; }
-    .rw-x { color:var(--err); cursor:pointer; font-weight:700; padding-top:6px; line-height:1; user-select:none; }
+    .rw-prev { margin:6px 0 0; padding-left:18px; }
+    .rw-prev li { font-size:13px; margin-bottom:5px; line-height:1.5; }
+    .rw-after-row { display:flex; gap:8px; align-items:flex-start; margin-bottom:7px; }
+    textarea.auto { overflow:hidden; resize:none; min-height:0; line-height:1.45; font-family:inherit; font-size:13px; }
+    .rw-x { color:var(--err); cursor:pointer; font-weight:700; padding-top:6px; line-height:1; user-select:none; font-size:16px; }
     .rw-x:hover { opacity:.7; }
+    .rw-orig { margin-top:8px; }
+    .rw-orig summary { font-size:11px; color:var(--muted); cursor:pointer; }
+    .rw-orig ul { margin:6px 0 0; padding-left:18px; }
+    .rw-orig li { color:var(--muted); font-size:12px; margin-bottom:3px; }
     .final-bar { display:flex; align-items:center; gap:12px; margin-top:6px; padding-top:12px; border-top:1px solid var(--border); }
   </style>
 </head>
@@ -267,9 +270,12 @@
         <div class="card" id="rewrite" style="display:none;">
           <div class="row" style="justify-content:space-between; margin:0 0 6px;">
             <p class="field-title" style="margin:0;">Polished bullets (Step 4)</p>
-            <span class="muted" id="rw-summary" style="font-size:12px;"></span>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <span class="muted" id="rw-summary" style="font-size:12px;"></span>
+              <button class="mini" id="rwToggleBtn">Edit</button>
+            </div>
           </div>
-          <div class="hint" style="margin-bottom:10px;">Before &rarr; after, enriched &amp; tailored to the JD (expanded bullets, JD keywords, realistic figures). Chips = JD keywords used. <b>Review the "after" for accuracy</b> — it may add plausible detail/numbers you should confirm.</div>
+          <div class="hint" style="margin-bottom:10px;">Enriched &amp; tailored to the JD (expanded bullets, JD keywords, realistic figures). <b>Preview</b> shows the result; click <b>Edit</b> to revise or delete any bullet. <b>Review for accuracy</b> — it may add plausible numbers you should confirm. "show original" reveals the before text.</div>
           <div id="rw-body"></div>
           <div class="final-bar">
             <button id="finalizeBtn">Finalize draft</button>
@@ -620,19 +626,29 @@ versions in production is required. Fast-paced startup environment.`;
           body: JSON.stringify({ jd_profile: LAST_PROFILE, selected_experiences: WORKING.experiences, selected_projects: WORKING.projects }) });
         const data = await r.json();
         if (!r.ok) { $('error').textContent = `Rewrite error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
-        renderRewrite(data);
+        FINAL_DRAFT = null; $('final-hint').textContent = 'Preview below. Click Edit to revise, then Finalize for the PDF (next step).';
+        RW_VIEW = 'preview'; renderRewrite(data);
+        $('rewrite').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (e) { $('error').textContent = 'Request failed: ' + e.message; }
       finally { btn.disabled = false; btn.innerHTML = 'Polish to JD &rarr;'; }
     }
     let REWRITE_DRAFT = null;  // the editable working draft (mutated in place)
     let FINAL_DRAFT = null;    // snapshot taken on "Finalize", consumed by M5
+    let RW_VIEW = 'preview';   // 'preview' | 'edit'
+
+    function autoGrow(ta) { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
+    function markDirty() {
+      $('rw-raw').textContent = REWRITE_DRAFT ? JSON.stringify(REWRITE_DRAFT, null, 2) : '';
+      if (FINAL_DRAFT) $('final-hint').textContent = 'Edited since last finalize — click Finalize again to update the draft.';
+    }
 
     function afterEditor(group) {
       group.rewritten_bullets = group.rewritten_bullets || [];
       const wrap = h('div', {});
       group.rewritten_bullets.forEach((b, i) => {
-        const ta = h('textarea', { class: 'edit', val: b.rewritten_text || '' });
-        ta.addEventListener('input', (e) => { b.rewritten_text = e.target.value; markDirty(); });
+        const ta = h('textarea', { class: 'edit auto', rows: '1', val: b.rewritten_text || '' });
+        ta.addEventListener('input', (e) => { b.rewritten_text = e.target.value; autoGrow(ta); markDirty(); });
         const x = h('span', { class: 'rw-x', title: 'remove bullet',
           onclick: () => { group.rewritten_bullets.splice(i, 1); renderRewrite(REWRITE_DRAFT); markDirty(); } }, '×');
         wrap.appendChild(h('div', { class: 'rw-after-row' }, ta, x));
@@ -641,36 +657,33 @@ versions in production is required. Fast-paced startup environment.`;
         onclick: () => { group.rewritten_bullets.push({ source_bullet_id: '', rewritten_text: '', matched_keywords: [] }); renderRewrite(REWRITE_DRAFT); markDirty(); } }, '+ bullet'));
       return wrap;
     }
-    function markDirty() {
-      $('rw-raw').textContent = REWRITE_DRAFT ? JSON.stringify(REWRITE_DRAFT, null, 2) : '';
-      if (FINAL_DRAFT) { $('final-hint').textContent = 'Edited since last finalize — click Finalize again to update the draft.'; }
-    }
 
     function renderRewrite(data) {
       REWRITE_DRAFT = data;
       const groups = [...(data.selected_experiences || []), ...(data.selected_projects || [])];
-      const body = $('rw-body'); body.innerHTML = ''; let beforeN = 0, afterN = 0;
+      const body = $('rw-body'); body.innerHTML = ''; let afterN = 0;
       groups.forEach((g) => {
         const meta = MATERIALS_MAP[g.source_id] || { title: g.source_id };
-        const before = (g.selected_bullets || []).map((b) => b.original_text || '');
-        const after = g.rewritten_bullets || [];
-        beforeN += before.length; afterN += after.length;
+        const orig = (g.selected_bullets || []).map((b) => b.original_text || '');
+        const after = g.rewritten_bullets || []; afterN += after.length;
         const kwAll = [...new Set(after.flatMap((b) => b.matched_keywords || []))];
-        const block = h('div', { class: 'rw-entry' },
-          h('div', { class: 'rw-title' }, meta.title || g.source_id,
-            h('span', { class: 'rw-count' }, `   ${before.length} → ${after.length} bullets`)),
-          h('div', { class: 'rw-cols' },
-            h('div', { class: 'rw-col' }, h('div', { class: 'rw-collabel' }, 'Before (original)'),
-              h('ul', { class: 'rw-old' }, before.map((t) => h('li', {}, t)))),
-            h('div', { class: 'rw-col' }, h('div', { class: 'rw-collabel after' }, 'After — editable'),
-              afterEditor(g))),
-          kwAll.length ? h('div', { class: 'chips', style: 'margin-top:10px;' }, kwAll.map((k) => h('span', { class: 'chip kw' }, k))) : null);
-        body.appendChild(block);
+        const afterEl = RW_VIEW === 'edit'
+          ? afterEditor(g)
+          : h('ul', { class: 'rw-prev' }, after.map((b) => h('li', {}, b.rewritten_text || '')));
+        const original = h('details', { class: 'rw-orig' }, h('summary', {}, 'show original'),
+          h('ul', {}, orig.map((t) => h('li', {}, t))));
+        body.appendChild(h('div', { class: 'rw-entry' },
+          h('div', { class: 'rw-title' }, meta.title || g.source_id, h('span', { class: 'rw-count' }, `   ${after.length} bullets`)),
+          afterEl,
+          kwAll.length ? h('div', { class: 'chips', style: 'margin-top:8px;' }, kwAll.map((k) => h('span', { class: 'chip kw' }, k))) : null,
+          original));
       });
-      $('rw-summary').textContent = `${groups.length} experiences · ${beforeN} → ${afterN} bullets`;
+      $('rw-summary').textContent = `${groups.length} experiences · ${afterN} bullets`;
       $('rw-raw').textContent = JSON.stringify(data, null, 2);
+      $('rwToggleBtn').textContent = RW_VIEW === 'edit' ? 'Preview' : 'Edit';
       $('rewrite').style.display = 'block';
-      $('rewrite').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Auto-size all edit textareas to fit their full text (no inner scroll).
+      if (RW_VIEW === 'edit') requestAnimationFrame(() => document.querySelectorAll('#rw-body textarea.auto').forEach(autoGrow));
     }
 
     function finalizeDraft() {
@@ -711,6 +724,7 @@ versions in production is required. Fast-paced startup environment.`;
     $('analyzeBtn').addEventListener('click', analyze);
     $('polishBtn').addEventListener('click', polish);
     $('finalizeBtn').addEventListener('click', finalizeDraft);
+    $('rwToggleBtn').addEventListener('click', () => { if (!REWRITE_DRAFT) return; RW_VIEW = RW_VIEW === 'edit' ? 'preview' : 'edit'; renderRewrite(REWRITE_DRAFT); });
     $('sampleBtn').addEventListener('click', () => { $('jd').value = SAMPLE_JD; });
     (async () => { const health = await refreshStatus(); await loadMaterialsMap(); await loadExistingLibrary(health); })();
   </script>

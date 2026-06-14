@@ -159,6 +159,10 @@ selection, on the user's finalized (manually adjustable) working set.
   (per-bullet textarea, add/remove bullet), backed by a client-side `REWRITE_DRAFT`.
   A "Finalize draft" button drops empty bullets and snapshots `FINAL_DRAFT` — the
   vetted content M5 will consume. Frontend-only.
+- **M4-rev4 (preview/edit modes):** polished result now opens in a clean read-only
+  PREVIEW (single bullet list per experience, "show original" collapsible); an
+  Edit/Preview toggle switches to per-bullet editing where textareas auto-grow to
+  fit all text (no inner scroll), with per-bullet delete and add. Frontend-only.
 
 ### M5 — LaTeX template + rendering (Step 5)  ⬅️ Next
 **Goal:** Rewrite result → `.tex` file (page count not yet handled).
@@ -206,6 +210,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M4-rev4 — ✅ Done. Polished-result panel got a preview/edit toggle: clean read-only preview by default; Edit mode gives per-bullet auto-growing textareas (full text visible, no inner scroll) with delete/add. Frontend-only; pytest 44/44.
 - 2026-06-14 — M4-rev3 — ✅ Done. Made the "after" column editable (per-bullet textarea, add/remove) backed by client-side REWRITE_DRAFT; "Finalize draft" snapshots FINAL_DRAFT (empty bullets dropped) as the vetted input for M5. Frontend-only; pytest 44/44.
 - 2026-06-14 — M4-rev2 — ✅ Done (per user feedback). Rewrite now ENRICHES (4-6 bullets, expand detail) with opt-in realistic embellishment (plausible figures/details on the real experience); UI flags "review for accuracy". `/select` returns ALL experiences in ranked_* (no category filter) so any can be manually added; auto-select still score>0. pytest 44/44; verified 1 bullet → 6 enriched, all 5 experiences addable.
 - 2026-06-14 — M4-rev — ✅ Done. Reworked rewriting from 1:1 (only changed syntax) to ATS-oriented WHOLE-EXPERIENCE rewrite: amplify JD-relevant points, condense/drop weak ones (bullet count can shrink), surface JD keywords/skills, strong verbs, quantify where supported, no fabrication. Output to `rewritten_bullets`; UI shows experience-level before→after with count delta. pytest 44/44; real call dropped an irrelevant bullet and lifted ATS keywords while keeping the real metric.
