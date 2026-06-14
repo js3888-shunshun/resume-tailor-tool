@@ -275,7 +275,7 @@
               <button class="mini" id="rwToggleBtn">Edit</button>
             </div>
           </div>
-          <div class="hint" style="margin-bottom:10px;">Enriched &amp; tailored to the JD (expanded bullets, JD keywords, realistic figures). <b>Preview</b> shows the result; click <b>Edit</b> to revise or delete any bullet. <b>Review for accuracy</b> — it may add plausible numbers you should confirm. "show original" reveals the before text.</div>
+          <div class="hint" style="margin-bottom:10px;">Left = your original, right = JD-tailored (expanded bullets, JD keywords, realistic figures). <b>Preview</b> shows the result; click <b>Edit</b> to revise or delete any bullet. <b>Review for accuracy</b> — it may add plausible numbers you should confirm.</div>
           <div id="rw-body"></div>
           <div class="final-bar">
             <button id="finalizeBtn">Finalize draft</button>
@@ -667,16 +667,18 @@ versions in production is required. Fast-paced startup environment.`;
         const orig = (g.selected_bullets || []).map((b) => b.original_text || '');
         const after = g.rewritten_bullets || []; afterN += after.length;
         const kwAll = [...new Set(after.flatMap((b) => b.matched_keywords || []))];
-        const afterEl = RW_VIEW === 'edit'
+        const rightInner = RW_VIEW === 'edit'
           ? afterEditor(g)
           : h('ul', { class: 'rw-prev' }, after.map((b) => h('li', {}, b.rewritten_text || '')));
-        const original = h('details', { class: 'rw-orig' }, h('summary', {}, 'show original'),
-          h('ul', {}, orig.map((t) => h('li', {}, t))));
+        const cols = h('div', { class: 'rw-cols' },
+          h('div', { class: 'rw-col' }, h('div', { class: 'rw-collabel' }, 'Original'),
+            h('ul', { class: 'rw-old' }, orig.map((t) => h('li', {}, t)))),
+          h('div', { class: 'rw-col' }, h('div', { class: 'rw-collabel after' }, RW_VIEW === 'edit' ? 'Tailored — editable' : 'Tailored to JD'),
+            rightInner));
         body.appendChild(h('div', { class: 'rw-entry' },
-          h('div', { class: 'rw-title' }, meta.title || g.source_id, h('span', { class: 'rw-count' }, `   ${after.length} bullets`)),
-          afterEl,
-          kwAll.length ? h('div', { class: 'chips', style: 'margin-top:8px;' }, kwAll.map((k) => h('span', { class: 'chip kw' }, k))) : null,
-          original));
+          h('div', { class: 'rw-title' }, meta.title || g.source_id, h('span', { class: 'rw-count' }, `   ${orig.length} → ${after.length} bullets`)),
+          cols,
+          kwAll.length ? h('div', { class: 'chips', style: 'margin-top:10px;' }, kwAll.map((k) => h('span', { class: 'chip kw' }, k))) : null));
       });
       $('rw-summary').textContent = `${groups.length} experiences · ${afterN} bullets`;
       $('rw-raw').textContent = JSON.stringify(data, null, 2);
