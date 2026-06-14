@@ -92,6 +92,23 @@ incrementally, one thin vertical slice per later milestone.
   (word-boundary, no-double-count, ordering, trim-keeps-one, category filter,
   skills/education). pytest 19/19. Live `/select` + `/materials` verified.
 
+### M3.5 — Resume ingestion / auto-decompose  ✅ Done (pulled forward from Backlog)
+**Goal:** Upload an existing resume → LLM decomposes it into the material library,
+so selection runs on the user's real experiences instead of sample data.
+- [x] `text_extract.py`: extract text from PDF (pypdf) / txt / tex / md
+- [x] `llm/prompts/resume_decompose.py`: resume text → MaterialsLibrary JSON
+  (no fabrication, id conventions, category inference, skill_tags/metrics/priority)
+- [x] `pipeline/ingest.py::decompose_resume()` (injectable mock; 8k token budget)
+- [x] `POST /materials/ingest` (file and/or pasted text → preview, not saved)
+- [x] `PUT /materials` (save reviewed library to gitignored `data/materials.json`)
+- [x] `/health` now reports `materials_source` = "user" | "sample"
+- [x] UI: "Step 1 — Your material library" card (upload/paste → Build → preview →
+  Save); status line shows whether selection uses YOUR library or the sample
+- **Acceptance:** ✅ decompose unit-tested with mock (happy/empty/bad-schema/no-key);
+  text extraction tested; live PUT→GET→health roundtrip flips source sample→user;
+  ingest empty→422. pytest 25/25. (Real-resume LLM decompose: user to verify.)
+- **Dep added:** `python-multipart` (file uploads).
+
 ### M4 — Content rewriting module (Step 4)  ⬅️ Next
 > UI slice: show before/after text for each rewritten bullet in the selection panel.
 **Goal:** Selected bullets + JD profile → rewritten results (with matched_keywords).
@@ -147,6 +164,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M3.5 — ✅ Done (pulled forward from Backlog at user request — they wanted real resume data, not the sample). Added text extraction, `decompose_resume` LLM step, `POST /materials/ingest` + `PUT /materials`, `/health.materials_source`, and a "Step 1 — Your material library" UI card (upload/paste → preview → save). pytest 25/25; live PUT→GET→health roundtrip verified; added `python-multipart`.
 - 2026-06-14 — M3 — ✅ Done. Added swappable keyword `scoring.py`, `step3_selection.select_experiences` (category filter → score → per-item cap → global trim keeping ≥1/group), `POST /select`, pulled `GET /materials` forward. UI gained a "Selected experiences" panel (score badges + matched-keyword chips) chained after Analyze. pytest 19/19; live endpoints verified.
 - 2026-06-14 — M2.5 — ✅ Done. Brought the frontend forward per user request (eager to demo MVP). Zero-build single page `app/static/index.html` served at `GET /`, wraps `/jd/analyze` + `/health` status line. Strategy change: UI now grows incrementally per milestone, superseding "frontend last". pytest 11/11.
 - 2026-06-14 — M2 — ✅ Real-key end-to-end verified with a synthetic MLE JD; output parsed cleanly into `JDProfile` (primary=MLE, secondary=[AI,DE]). Connected GitHub remote `js3888-shunshun/resume-tailor-tool` (branch main), pushed all commits.
@@ -157,8 +175,10 @@ milestone is the final integration + polish, not the first frontend.)
 - LinkedIn cold message generation
 - Company-info search injected into the cover letter (`company_context`)
 - Embedding semantic retrieval to replace keyword scoring (swap `scoring.py`)
-- Upload existing resume → LLM auto-decompose into the material library
+- ~~Upload existing resume → LLM auto-decompose into the material library~~
+  (DONE — pulled forward to M3.5)
 - Auto-add content when one page but visibly sparse (the Step 6.4 TODO)
+- Editable preview before saving the ingested library (currently view-only JSON)
 
 ## Current blockers / awaiting user
 - [x] Set `ANTHROPIC_API_KEY` (needed from M2) — configured, real call verified

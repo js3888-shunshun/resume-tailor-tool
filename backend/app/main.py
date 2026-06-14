@@ -58,10 +58,13 @@ def startup_checks() -> None:
 def health() -> dict:
     settings = get_settings()
     engine = detect_latex_engine()
+    using_user_library = settings.materials_path.exists()
     return {
         "status": "ok",
         "version": app.version,
         "latex_engine": engine.name if engine else None,
         "has_api_key": settings.has_api_key,
         "model": settings.model,
+        # "user" = your saved materials.json; "sample" = the dev fallback fixture.
+        "materials_source": "user" if using_user_library else "sample",
     }

@@ -88,7 +88,37 @@
     </header>
 
     <div class="card">
-      <label for="jd">Job description</label>
+      <div class="row" style="justify-content:space-between; margin:0 0 10px;">
+        <label style="margin:0;">Step 1 — Your material library</label>
+        <span class="muted" id="lib-source" style="font-size:12px;"></span>
+      </div>
+      <div class="hint" style="margin-bottom:10px;">
+        Upload your existing resume (PDF / TXT / TeX) or paste its text. Claude
+        decomposes it into your material library. Review, then <b>Save</b> — after
+        that, selection runs on <b>your</b> experiences instead of the sample data.
+      </div>
+      <input type="file" id="resumeFile" accept=".pdf,.txt,.tex,.md,.text"
+             style="font-size:13px; color:var(--muted);" />
+      <textarea id="resumeText" placeholder="…or paste your resume text here"
+                style="min-height:120px; margin-top:10px;"></textarea>
+      <div class="row">
+        <button id="buildBtn">Build library from resume</button>
+        <button class="secondary" id="saveLibBtn" disabled>Save as my library</button>
+        <span class="hint" id="lib-hint"></span>
+      </div>
+      <div class="error" id="lib-error"></div>
+      <div id="lib-preview" style="display:none; margin-top:12px;">
+        <p class="field-title" style="margin:0 0 6px;">Parsed library (preview, not saved yet)</p>
+        <div class="muted" id="lib-summary" style="font-size:13px;"></div>
+        <details class="raw" open>
+          <summary class="muted">Raw JSON</summary>
+          <pre id="lib-raw"></pre>
+        </details>
+      </div>
+    </div>
+
+    <div class="card">
+      <label for="jd">Step 2 — Job description</label>
       <textarea id="jd" placeholder="Paste the full job description here…"></textarea>
       <div class="row">
         <button id="analyzeBtn">Analyze &amp; Select</button>
@@ -173,6 +203,10 @@ versions in production is required. Fast-paced startup environment.`;
           `<span class="dot ${keyOk ? 'ok' : 'bad'}"></span>API key ${keyOk ? 'set' : 'missing'}` +
           ` &nbsp;·&nbsp; model ${h.model}` +
           ` &nbsp;·&nbsp; LaTeX ${h.latex_engine ? h.latex_engine : 'not installed'}`;
+        const src = h.materials_source;
+        $('lib-source').innerHTML = src === 'user'
+          ? `<span class="dot ok"></span>using YOUR saved library`
+          : `<span class="dot bad"></span>using SAMPLE data (build &amp; save yours below)`;
       } catch (e) {
         $('status').innerHTML = `<span class="dot bad"></span>backend unreachable`;
       }
@@ -314,6 +348,79 @@ versions in production is required. Fast-paced startup environment.`;
       }
     }
 
+    // ---- Step 1: build / save material library ----
+    let PARSED_LIBRARY = null;
+
+    function libSummary(lib) {
+      const exp = (lib.experiences || []).length;
+      const proj = (lib.projects || []).length;
+      const edu = (lib.education || []).length;
+      const skills = (lib.skills || []).length;
+      const bullets = (lib.experiences || []).concat(lib.projects || [])
+        .reduce((n, it) => n + (it.bullets || []).length, 0);
+      const name = (lib.personal_info && lib.personal_info.name) || '(no name)';
+      return `${name} — ${edu} education · ${exp} experiences · ${proj} projects · ${bullets} bullets · ${skills} skills`;
+    }
+
+    async function buildLibrary() {
+      $('lib-error').textContent = '';
+      const file = $('resumeFile').files[0];
+      const text = $('resumeText').value.trim();
+      if (!file && !text) { $('lib-error').textContent = 'Upload a file or paste resume text first.'; return; }
+      const btn = $('buildBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Parsing…';
+      try {
+        const fd = new FormData();
+        if (file) fd.append('file', file);
+        if (text) fd.append('resume_text', text);
+        const r = await fetch('/materials/ingest', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (!r.ok) {
+          $('lib-error').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`;
+          return;
+        }
+        PARSED_LIBRARY = data;
+        $('lib-summary').textContent = libSummary(data);
+        $('lib-raw').textContent = JSON.stringify(data, null, 2);
+        $('lib-preview').style.display = 'block';
+        $('saveLibBtn').disabled = false;
+        $('lib-hint').textContent = 'Review the parse, then Save.';
+      } catch (e) {
+        $('lib-error').textContent = 'Request failed: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Build library from resume';
+      }
+    }
+
+    async function saveLibrary() {
+      if (!PARSED_LIBRARY) return;
+      const btn = $('saveLibBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Saving…';
+      try {
+        const r = await fetch('/materials', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(PARSED_LIBRARY),
+        });
+        const data = await r.json();
+        if (!r.ok) { $('lib-error').textContent = `Save error: ${data.detail || JSON.stringify(data)}`; return; }
+        $('lib-hint').textContent = '✓ Saved. Selection now uses your library.';
+        MATERIALS_MAP = {};
+        await loadMaterialsMap();   // refresh id->title map
+        await refreshStatus();      // status flips to "using YOUR saved library"
+      } catch (e) {
+        $('lib-error').textContent = 'Request failed: ' + e.message;
+      } finally {
+        btn.textContent = 'Save as my library';
+        btn.disabled = false;
+      }
+    }
+
+    $('buildBtn').addEventListener('click', buildLibrary);
+    $('saveLibBtn').addEventListener('click', saveLibrary);
     $('analyzeBtn').addEventListener('click', analyze);
     $('sampleBtn').addEventListener('click', () => { $('jd').value = SAMPLE_JD; });
     refreshStatus();

@@ -1,16 +1,22 @@
-"""Router for the material library. `GET /materials` (read).
+"""Router for the material library.
 
-Pulled forward from M8 because the web UI needs it to map experience/project
-ids to human-readable titles when displaying selection results.
-`PUT /materials` (write) will be added in M8.
+- GET  /materials          read current library (sample fallback if none saved)
+- POST /materials/ingest   resume file/text -> decomposed library (preview, not saved)
+- PUT  /materials          save a library to backend/data/materials.json
 """
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from typing import Optional
 
-from ..materials_store import load_materials
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+
+from ..config import get_settings
+from ..llm import LLMError
+from ..materials_store import load_materials, save_materials
+from ..pipeline.ingest import decompose_resume
 from ..schemas import MaterialsLibrary
+from ..text_extract import extract_text
 
 router = APIRouter(tags=["materials"])
 
@@ -21,3 +27,39 @@ def get_materials() -> MaterialsLibrary:
         return load_materials()
     except (FileNotFoundError, ValueError) as e:
         raise HTTPException(status_code=500, detail=f"Failed to load materials: {e}")
+
+
+@router.post("/materials/ingest", response_model=MaterialsLibrary)
+async def ingest_resume(
+    file: Optional[UploadFile] = File(default=None),
+    resume_text: str = Form(default=""),
+) -> MaterialsLibrary:
+    """Decompose an uploaded resume (file and/or pasted text) into a library.
+
+    Returns the parsed library for PREVIEW; it is not saved until PUT /materials.
+    """
+    text = resume_text or ""
+    if file is not None:
+        data = await file.read()
+        try:
+            text = extract_text(file.filename or "upload", data)
+        except Exception as e:  # noqa: BLE001 - surface extraction problems clearly
+            raise HTTPException(status_code=422, detail=f"Could not read file: {e}")
+
+    if not text.strip():
+        raise HTTPException(status_code=422, detail="No resume text provided.")
+
+    try:
+        return decompose_resume(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except LLMError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.put("/materials")
+def put_materials(library: MaterialsLibrary) -> dict:
+    """Persist a (reviewed) library to backend/data/materials.json (gitignored)."""
+    path = save_materials(library)
+    settings = get_settings()
+    return {"saved": True, "path": str(path), "is_user_library": path == settings.materials_path}

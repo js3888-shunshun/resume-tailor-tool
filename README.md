@@ -73,9 +73,17 @@ For low-level/debug access, the interactive Swagger UI is at
 
 ## Preparing the material library
 
-In Phase 1 the user hand-authors `backend/data/materials.json` (schema in
-`backend/app/schemas/materials.py`). If it does not exist, the system falls back
-to `materials.sample.json`, so you can run the pipeline with sample data first.
+Two ways to create `backend/data/materials.json`:
+
+1. **Upload your resume (recommended):** in the web UI, "Step 1 — Your material
+   library" → upload a PDF/TXT/TeX or paste text → **Build library from resume**
+   (Claude decomposes it) → review → **Save as my library**.
+2. **Hand-author** `backend/data/materials.json` following the schema in
+   `backend/app/schemas/materials.py`.
+
+If no saved library exists, the system falls back to `materials.sample.json`
+(a fictional sample) so the pipeline runs with demo data first. The web UI's
+status line shows whether selection is using **your** library or the **sample**.
 
 ## Running tests
 
