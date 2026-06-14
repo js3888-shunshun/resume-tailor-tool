@@ -77,18 +77,23 @@ incrementally, one thin vertical slice per later milestone.
 - **Note:** When the UI later needs richer interactions it can be migrated to
   Vite + React (see Backlog); for now zero-build wins for fast demos.
 
-### M3 — Experience matching & selection (Step 3)  ⬅️ Next
-> UI slice for this milestone: add a "Selection" panel to `index.html` showing
-> which bullets were picked and their scores.
+### M3 — Experience matching & selection (Step 3)  ✅ Done
 **Goal:** JD profile + material library → preliminary selection (no rewrite yet).
-- [ ] Category-intersection filter to build the candidate pool
-- [ ] `scoring.py`: standalone scoring function (keyword overlap), **swappable interface**
-- [ ] Sort by score + priority, cap bullets per experience (configurable `target_bullet_count`)
-- [ ] Output `SelectionResult` (pre-rewrite)
-- **Acceptance:** Pure functions, unit-testable without an LLM; given a mock JD
-  profile, stably selects the expected bullets; scoring function has its own test.
+- [x] Category-intersection filter to build the candidate pool
+- [x] `scoring.py`: standalone keyword-overlap scorer with **swappable `Scorer`
+  interface** (word-boundary matching; highlight keywords weighted 2× skills)
+- [x] Sort by score + priority, cap bullets per item, global `target_bullet_count`
+  trim that never empties a group
+- [x] Output `SelectionResult` (pre-rewrite) with per-bullet score + matched keywords
+- [x] `POST /select` endpoint; `GET /materials` pulled forward (UI needs titles)
+- [x] UI slice: "Selected experiences" panel in `index.html` (score badges +
+  matched-keyword chips), chained after Analyze; configurable target-bullets input
+- **Acceptance:** ✅ Pure functions, no LLM; scoring + selection unit-tested
+  (word-boundary, no-double-count, ordering, trim-keeps-one, category filter,
+  skills/education). pytest 19/19. Live `/select` + `/materials` verified.
 
-### M4 — Content rewriting module (Step 4)
+### M4 — Content rewriting module (Step 4)  ⬅️ Next
+> UI slice: show before/after text for each rewritten bullet in the selection panel.
 **Goal:** Selected bullets + JD profile → rewritten results (with matched_keywords).
 - [ ] Batch all bullets into one LLM call, return a JSON array
 - [ ] Prompt constraints: no fabrication, use JD keywords, similar length, label matched keywords
@@ -142,6 +147,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M3 — ✅ Done. Added swappable keyword `scoring.py`, `step3_selection.select_experiences` (category filter → score → per-item cap → global trim keeping ≥1/group), `POST /select`, pulled `GET /materials` forward. UI gained a "Selected experiences" panel (score badges + matched-keyword chips) chained after Analyze. pytest 19/19; live endpoints verified.
 - 2026-06-14 — M2.5 — ✅ Done. Brought the frontend forward per user request (eager to demo MVP). Zero-build single page `app/static/index.html` served at `GET /`, wraps `/jd/analyze` + `/health` status line. Strategy change: UI now grows incrementally per milestone, superseding "frontend last". pytest 11/11.
 - 2026-06-14 — M2 — ✅ Real-key end-to-end verified with a synthetic MLE JD; output parsed cleanly into `JDProfile` (primary=MLE, secondary=[AI,DE]). Connected GitHub remote `js3888-shunshun/resume-tailor-tool` (branch main), pushed all commits.
 - 2026-06-14 — M2 — ✅ Done (mock acceptance). Added injectable-mock `LLMClient` (JSON parse + fence tolerance + retry), `jd_analysis` prompt, `step2_jd_analysis.analyze_jd`, `POST /jd/analyze`. pytest 11/11; no key→503, empty→422.
