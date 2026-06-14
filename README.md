@@ -25,7 +25,8 @@ job application tool/
     │   ├── schemas/        # all Pydantic models
     │   ├── llm/            # centralized LLM client + prompt templates
     │   ├── pipeline/       # pipeline steps (Step 2..7)
-    │   └── routers/        # FastAPI routers
+    │   ├── routers/        # FastAPI routers
+    │   └── static/         # zero-build single-page web UI (served at /)
     ├── data/
     │   └── materials.sample.json   # sample library for development
     └── tests/
@@ -56,19 +57,19 @@ Copy-Item .env.example .env
 cd backend
 uvicorn app.main:app --reload
 
-# 4. Open the interactive API docs
-# Browser: http://127.0.0.1:8000/docs
-# Health check: http://127.0.0.1:8000/health
+# 4. Open the web UI
+# Browser: http://127.0.0.1:8000/
 ```
 
-## Testing the JD analysis endpoint (M2)
+## Web UI
 
-There is no frontend yet (that is milestone M8). Use the built-in Swagger UI:
+A zero-build single page is served by the backend itself at
+**http://127.0.0.1:8000/** (no npm, no separate dev server). Start the backend,
+open that URL, paste a JD, and click **Analyze JD** to see the structured
+`JDProfile`. The page grows with each milestone (selection → rewrite → PDFs).
 
-1. Start the backend (`uvicorn app.main:app --reload` from `backend/`).
-2. Open http://127.0.0.1:8000/docs
-3. Expand `POST /jd/analyze`, click **Try it out**, paste a real JD into
-   `jd_text`, and click **Execute**. The structured `JDProfile` is returned.
+For low-level/debug access, the interactive Swagger UI is at
+**http://127.0.0.1:8000/docs**.
 
 ## Preparing the material library
 

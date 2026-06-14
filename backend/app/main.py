@@ -7,8 +7,10 @@ Later milestones add /jd/analyze, /materials, /generate routers.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 from .config import get_settings
 from .latex_tools import INSTALL_HINT, detect_latex_engine
@@ -17,8 +19,16 @@ from .routers import jd as jd_router
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
 logger = logging.getLogger("resume_tailor")
 
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
 app = FastAPI(title="AI Resume Tailor", version="0.1.0")
 app.include_router(jd_router.router)
+
+
+@app.get("/", include_in_schema=False)
+def index() -> FileResponse:
+    """Serve the single-page frontend (zero-build, same-origin)."""
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.on_event("startup")

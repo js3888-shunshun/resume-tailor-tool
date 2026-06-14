@@ -63,7 +63,23 @@ the Step 6 "compile-check-fix" loop.
 - **Real verification:** ✅ 2026-06-14 ran a real JD (Acme Robotics MLE),
   output parsed cleanly into `JDProfile`, primary=MLE / secondary=[AI, DE].
 
+### M2.5 — Minimal web UI (JD analysis)  ✅ Done
+**Goal:** Bring the frontend forward (user wants an early, demoable MVP). A
+zero-build single page served by FastAPI itself, wrapping existing endpoints.
+This supersedes the original "frontend last" plan: the UI now grows
+incrementally, one thin vertical slice per later milestone.
+- [x] `app/static/index.html`: paste JD → Analyze → render `JDProfile`
+  (category badges, highlight-keyword chips, skills, responsibilities, raw JSON)
+- [x] Live backend status line (calls `/health`: API key / model / LaTeX)
+- [x] Served at `GET /` (same-origin, no CORS, no npm/build step)
+- **Acceptance:** ✅ `GET /` returns the page (200, text/html); the page calls
+  `/jd/analyze` and renders the profile; pytest 11/11 unaffected.
+- **Note:** When the UI later needs richer interactions it can be migrated to
+  Vite + React (see Backlog); for now zero-build wins for fast demos.
+
 ### M3 — Experience matching & selection (Step 3)  ⬅️ Next
+> UI slice for this milestone: add a "Selection" panel to `index.html` showing
+> which bullets were picked and their scores.
 **Goal:** JD profile + material library → preliminary selection (no rewrite yet).
 - [ ] Category-intersection filter to build the candidate pool
 - [ ] `scoring.py`: standalone scoring function (keyword overlap), **swappable interface**
@@ -112,18 +128,21 @@ implemented as a state machine / loop.
 - **Acceptance:** Produces a structurally sound cover letter PDF; special chars
   don't break compilation.
 
-### M8 — Frontend integration + `/generate` wiring
-**Goal:** End-to-end flow plus a minimal frontend.
+### M8 — End-to-end `/generate` wiring + UI polish
+**Goal:** Chain the whole pipeline behind one call and finish the UI.
+(The frontend itself was brought forward to M2.5 and grows each milestone; this
+milestone is the final integration + polish, not the first frontend.)
 - [ ] `POST /generate`: chain Step 2-7, return two PDF links + intermediate results
-- [ ] `GET /materials` / `PUT /materials`
-- [ ] Frontend (minimal Vite React): JD input → show JD profile / selection → download PDFs
-- **Acceptance:** From the frontend, paste a JD, click once, see intermediate
+- [ ] `GET /materials` / `PUT /materials` (+ a basic material-editing UI)
+- [ ] Single "Generate" button in `index.html`: JD → profile → selection → both PDFs to download
+- **Acceptance:** From the page, paste a JD, click once, see intermediate
   results and download both PDFs.
 
 ---
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M2.5 — ✅ Done. Brought the frontend forward per user request (eager to demo MVP). Zero-build single page `app/static/index.html` served at `GET /`, wraps `/jd/analyze` + `/health` status line. Strategy change: UI now grows incrementally per milestone, superseding "frontend last". pytest 11/11.
 - 2026-06-14 — M2 — ✅ Real-key end-to-end verified with a synthetic MLE JD; output parsed cleanly into `JDProfile` (primary=MLE, secondary=[AI,DE]). Connected GitHub remote `js3888-shunshun/resume-tailor-tool` (branch main), pushed all commits.
 - 2026-06-14 — M2 — ✅ Done (mock acceptance). Added injectable-mock `LLMClient` (JSON parse + fence tolerance + retry), `jd_analysis` prompt, `step2_jd_analysis.analyze_jd`, `POST /jd/analyze`. pytest 11/11; no key→503, empty→422.
 - 2026-06-14 — M1 — ✅ Done. Skeleton + 3 Pydantic schema groups + sample library + FastAPI `/health` + startup detection. venv created, pytest 5/5, `/health` 200. git initialized & committed (c0cb74e).
