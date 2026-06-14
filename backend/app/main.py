@@ -12,11 +12,13 @@ from fastapi import FastAPI
 
 from .config import get_settings
 from .latex_tools import INSTALL_HINT, detect_latex_engine
+from .routers import jd as jd_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
 logger = logging.getLogger("resume_tailor")
 
 app = FastAPI(title="AI Resume Tailor", version="0.1.0")
+app.include_router(jd_router.router)
 
 
 @app.on_event("startup")

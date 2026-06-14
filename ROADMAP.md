@@ -25,26 +25,27 @@
 
 ## 阶段与里程碑
 
-### M1 — 项目骨架 + Schema + 示例数据  ⬅️ 当前阶段
+### M1 — 项目骨架 + Schema + 示例数据  ✅ 完成
 **目标：** 搭好可运行的后端骨架，定义全部 Pydantic 模型，准备示例素材库。
-- [ ] 项目目录结构 + git 初始化 + `.gitignore` + `.env.example`
-- [ ] `requirements.txt`（fastapi, uvicorn, anthropic, pydantic, jinja2, pypdf, pytest 等）
-- [ ] 全部 schema 的 Pydantic 模型：materials / jd_profile / selection
-- [ ] 一份合法的示例 `materials.sample.json`（用于全程开发测试）
-- [ ] FastAPI app 骨架 + `GET /health` + 启动时检测 pdflatex/tectonic 并打印提示
-- [ ] `config.py` 读取 `.env`（API key、模型名、路径）
-- [ ] 初版 `README.md`
-- **验收标准：** `uvicorn` 能启动，`GET /health` 返回 200；`python -c "load + validate materials.sample.json"` 通过 schema 校验；pytest 至少 1 个 schema 测试通过。
+- [x] 项目目录结构 + git 初始化 + `.gitignore` + `.env.example`
+- [x] `requirements.txt`（fastapi, uvicorn, anthropic, pydantic, jinja2, pypdf, pytest 等）
+- [x] 全部 schema 的 Pydantic 模型：materials / jd_profile / selection
+- [x] 一份合法的示例 `materials.sample.json`（用于全程开发测试）
+- [x] FastAPI app 骨架 + `GET /health` + 启动时检测 pdflatex/tectonic 并打印提示
+- [x] `config.py` 读取 `.env`（API key、模型名、路径）
+- [x] 初版 `README.md`
+- **验收标准：** ✅ 全部通过 —— app 启动 + `/health` 返回 200；`materials.sample.json` 通过 schema 校验；pytest 5/5 通过。
 
-### M2 — JD 分析模块 (Step 2)
+### M2 — JD 分析模块 (Step 2)  ✅ 完成（待真实 key 跑一次端到端）
 **目标：** JD 原文 → 结构化 JD 画像。
-- [ ] `llm/client.py`：封装 Anthropic 调用，支持 JSON/structured output + 重试
-- [ ] prompt 模板：约束只输出 JSON、category 枚举固定 `[AI,DS,DE,MLE,SDE]`
-- [ ] `pipeline/step2_jd_analysis.py`：返回 `JDProfile`
-- [ ] `POST /jd/analyze` 接口
-- **验收标准：** 给一段真实 JD，返回符合 `JDProfile` schema 的 JSON；category 落在枚举内；无 key 时给清晰报错。
+- [x] `llm/client.py`：封装 Anthropic 调用，支持 JSON 解析（容错代码围栏）+ 重试 + **可注入 mock responder**
+- [x] prompt 模板（`llm/prompts/jd_analysis.py`）：约束只输出 JSON、category 枚举固定 `[AI,DS,DE,MLE,SDE]`
+- [x] `pipeline/step2_jd_analysis.py`：返回 `JDProfile`
+- [x] `POST /jd/analyze` 接口
+- **验收标准：** ✅ mock 下返回合法 `JDProfile`；坏 category 被拒；无 key → 503 清晰报错；空输入 → 422。pytest 11/11。
+- **待办（需用户 key）：** 填好 `.env` 后用真实 JD 跑一次 `/jd/analyze` 确认真实模型输出可解析。
 
-### M3 — 经历匹配与筛选模块 (Step 3)
+### M3 — 经历匹配与筛选模块 (Step 3)  ⬅️ 下一阶段
 **目标：** JD 画像 + 素材库 → 初步筛选结果（未改写）。
 - [ ] category 交集过滤出候选池
 - [ ] `scoring.py`：独立打分函数（关键词重合度），**可替换接口**
@@ -96,6 +97,8 @@
 
 ## 进度日志 (Changelog)
 > 倒序记录。格式：`日期 — 里程碑 — 做了什么 / 验收结果`
+- 2026-06-14 — M2 — ✅ 完成（mock 验收）。新增可注入 mock 的 `LLMClient`（JSON 解析+围栏容错+重试）、`jd_analysis` prompt、`step2_jd_analysis.analyze_jd`、`POST /jd/analyze`。pytest 11/11；无 key→503，空输入→422。真实 key 端到端待用户填 `.env` 后跑。
+- 2026-06-14 — M1 — ✅ 完成。骨架 + 3 组 Pydantic schema + 示例素材库 + FastAPI `/health` + 启动检测。venv 装好依赖，pytest 5/5 通过，`/health` 返回 200。已 git 初始化并提交 (c0cb74e)。
 - 2026-06-14 — M1 — 启动项目，创建 ROADMAP。环境已确认（Python3.13/Node24/Git ok；缺 latex 与 API key）。
 
 ## Backlog / 未来扩展（Phase 2+，先别做）
