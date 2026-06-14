@@ -25,6 +25,10 @@ class SelectedBullet(BaseModel):
 
 class SelectedExperience(BaseModel):
     source_id: str
+    # Experience-level relevance: the experience is matched/ranked as a whole
+    # (category fit + how many distinct JD keywords it touches across its bullets).
+    score: float = 0.0
+    matched_keywords: List[str] = Field(default_factory=list)
     selected_bullets: List[SelectedBullet] = Field(default_factory=list)
 
 

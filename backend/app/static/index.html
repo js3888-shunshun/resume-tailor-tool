@@ -197,9 +197,12 @@
           <div class="row">
             <button id="analyzeBtn">Analyze &amp; Select</button>
             <button class="secondary" id="sampleBtn">Load sample JD</button>
-            <label for="target" style="margin:0 0 0 8px;">Target bullets</label>
-            <input id="target" type="number" min="1" max="40" value="12"
-                   style="width:64px; background:#fff; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px;" />
+            <label style="margin:0 0 0 8px;">Experiences</label>
+            <input id="targetExp" type="number" min="0" max="15" value="4"
+                   style="width:58px; background:#fff; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px;" />
+            <label style="margin:0;">Projects</label>
+            <input id="targetProj" type="number" min="0" max="15" value="2"
+                   style="width:58px; background:#fff; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px;" />
           </div>
           <div class="error" id="error"></div>
         </div>
@@ -224,7 +227,7 @@
             <p class="field-title" style="margin:0;">Selected experiences (Step 3)</p>
             <span class="muted" id="sel-summary" style="font-size:12px;"></span>
           </div>
-          <div class="hint" style="margin-bottom:10px;">Bullets picked by keyword-overlap score &amp; priority. Chips = matched JD keywords.</div>
+          <div class="hint" style="margin-bottom:10px;">Whole experiences ranked by category fit + keyword breadth. The score is per experience; all its bullets are kept. Chips = JD keywords the experience touches.</div>
           <div id="sel-body"></div>
           <details class="raw"><summary class="muted">Raw JSON</summary><pre id="sel-raw"></pre></details>
         </div>
@@ -498,25 +501,27 @@ versions in production is required. Fast-paced startup environment.`;
         (m.experiences || []).forEach((e) => { MATERIALS_MAP[e.id] = { title: e.title, org: e.organization, kind: 'Experience' }; });
         (m.projects || []).forEach((p) => { MATERIALS_MAP[p.id] = { title: p.title, org: '', kind: 'Project' }; }); } catch (e) {}
     }
+    function selBlock(g, kindLabel) {
+      const meta = MATERIALS_MAP[g.source_id] || { title: g.source_id, org: '' };
+      const head = h('div', { class: 'exp-head' },
+        h('span', { class: 'exp-title' }, meta.title || g.source_id, kindLabel ? h('span', { class: 'tag' }, kindLabel) : null),
+        h('span', { class: 'score-badge ' + (g.score > 0 ? '' : 'zero') }, 'score ' + g.score));
+      const sub = meta.org ? h('div', { class: 'exp-meta', style: 'margin:-2px 0 6px;' }, meta.org) : null;
+      const ul = h('ul', { class: 'lv-bullets' }, (g.selected_bullets || []).map((b) => h('li', {}, b.original_text || b.source_bullet_id)));
+      const kw = (g.matched_keywords || []).length
+        ? h('div', { class: 'chips', style: 'margin-top:8px;' }, g.matched_keywords.map((k) => h('span', { class: 'chip kw' }, k)))
+        : null;
+      return h('div', { class: 'exp-block' }, head, sub, ul, kw);
+    }
     function renderSelection(sel) {
-      const groups = [...(sel.selected_experiences || []), ...(sel.selected_projects || [])];
-      const body = $('sel-body'); body.innerHTML = ''; let n = 0;
-      groups.forEach((g) => {
-        const meta = MATERIALS_MAP[g.source_id] || { title: g.source_id, org: '', kind: '' };
-        const block = h('div', { class: 'exp-block' });
-        block.appendChild(h('div', { class: 'exp-head' },
-          h('span', { class: 'exp-title' }, meta.title, meta.kind ? h('span', { class: 'tag' }, meta.kind) : null),
-          h('span', { class: 'exp-meta' }, meta.org || '')));
-        (g.selected_bullets || []).forEach((b) => { n++;
-          block.appendChild(h('div', { class: 'bullet' },
-            h('span', { class: 'score-badge ' + (b.score > 0 ? '' : 'zero') }, String(b.score)),
-            h('div', { class: 'bullet-body' }, h('div', { class: 'bullet-text' }, b.original_text || b.source_bullet_id),
-              (b.matched_keywords || []).length ? h('div', { class: 'bullet-kw chips' }, b.matched_keywords.map((k) => h('span', { class: 'chip kw' }, k))) : null))); });
-        body.appendChild(block);
-      });
-      $('sel-summary').textContent = `${groups.length} item(s) · ${n} bullet(s) · ${(sel.selected_skills || []).length} skill(s)`;
+      const exps = sel.selected_experiences || [], projs = sel.selected_projects || [];
+      const body = $('sel-body'); body.innerHTML = '';
+      let bulletN = 0;
+      exps.forEach((g) => { bulletN += (g.selected_bullets || []).length; body.appendChild(selBlock(g, 'Experience')); });
+      projs.forEach((g) => { bulletN += (g.selected_bullets || []).length; body.appendChild(selBlock(g, 'Project')); });
+      $('sel-summary').textContent = `${exps.length} experiences · ${projs.length} projects · ${bulletN} bullets · ${(sel.selected_skills || []).length} skills`;
       $('sel-raw').textContent = JSON.stringify(sel, null, 2);
-      $('selection').style.display = groups.length ? 'block' : 'none';
+      $('selection').style.display = (exps.length || projs.length) ? 'block' : 'none';
     }
     async function analyze() {
       const jd = $('jd').value.trim(); $('error').textContent = '';
@@ -528,8 +533,9 @@ versions in production is required. Fast-paced startup environment.`;
         const profile = await r.json();
         if (!r.ok) { $('error').textContent = `Error ${r.status}: ${profile.detail || JSON.stringify(profile)}`; return; }
         renderResult(profile); await loadMaterialsMap();
-        const target = parseInt($('target').value, 10) || 12;
-        const sr = await fetch('/select', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jd_profile: profile, target_bullet_count: target }) });
+        const tExp = parseInt($('targetExp').value, 10); const tProj = parseInt($('targetProj').value, 10);
+        const sr = await fetch('/select', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jd_profile: profile, target_experiences: isNaN(tExp) ? 4 : tExp, target_projects: isNaN(tProj) ? 2 : tProj }) });
         const sel = await sr.json();
         if (!sr.ok) { $('error').textContent = `Selection error ${sr.status}: ${sel.detail || JSON.stringify(sel)}`; return; }
         renderSelection(sel);

@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable, List
 
-from ..schemas import Bullet, JDProfile
+from ..schemas import Bullet, Experience, JDProfile, Project
 
 
 @dataclass
@@ -23,8 +23,18 @@ class BulletScore:
     matched_keywords: List[str] = field(default_factory=list)
 
 
-# A scorer is any callable with this shape. Swap freely.
+@dataclass
+class ExperienceScore:
+    score: float
+    # Distinct JD keywords this experience touches across all its bullets.
+    matched_keywords: List[str] = field(default_factory=list)
+    # bullet id -> keywords it matched (kept for later highlighting in Step 4).
+    bullet_matches: dict = field(default_factory=dict)
+
+
+# Scorers are callables with these shapes. Swap freely (e.g. embeddings later).
 Scorer = Callable[[Bullet, JDProfile], BulletScore]
+ExperienceScorer = Callable[["Experience | Project", JDProfile], ExperienceScore]
 
 
 def _contains_keyword(haystack: str, keyword: str) -> bool:
@@ -75,3 +85,43 @@ def score_bullet(
             matched.append(kw)
 
     return BulletScore(score=score, matched_keywords=matched)
+
+
+def score_experience(
+    item: "Experience | Project",
+    jd: JDProfile,
+    *,
+    primary_weight: float = 3.0,
+    secondary_weight: float = 1.0,
+    highlight_weight: float = 2.0,
+    skill_weight: float = 1.0,
+) -> ExperienceScore:
+    """Score an experience/project AS A WHOLE against the JD.
+
+    Two ingredients:
+      1. Category fit: primary category match is worth more than secondaries.
+      2. Keyword breadth: distinct JD keywords the experience touches across all
+         its bullets (highlight keywords weighted higher than general skills).
+    Bullets are NOT scored or ranked individually here — the experience is the
+    unit of selection. Per-bullet matches are still recorded for later highlighting.
+    """
+    cats = set(item.categories)
+    cat_score = 0.0
+    if jd.primary_category in cats:
+        cat_score += primary_weight
+    cat_score += secondary_weight * len(cats & set(jd.secondary_categories))
+
+    highlight_set = {k.lower() for k in jd.keywords_for_highlight}
+    matched: List[str] = []
+    seen: set[str] = set()
+    bullet_matches: dict = {}
+    for b in item.bullets:
+        bs = score_bullet(b, jd, highlight_weight=highlight_weight, skill_weight=skill_weight)
+        bullet_matches[b.id] = bs.matched_keywords
+        for kw in bs.matched_keywords:
+            if kw.lower() not in seen:
+                seen.add(kw.lower())
+                matched.append(kw)
+
+    kw_score = sum(highlight_weight if m.lower() in highlight_set else skill_weight for m in matched)
+    return ExperienceScore(score=cat_score + kw_score, matched_keywords=matched, bullet_matches=bullet_matches)

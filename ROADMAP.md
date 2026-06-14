@@ -77,20 +77,29 @@ incrementally, one thin vertical slice per later milestone.
 - **Note:** When the UI later needs richer interactions it can be migrated to
   Vite + React (see Backlog); for now zero-build wins for fast demos.
 
-### M3 — Experience matching & selection (Step 3)  ✅ Done
+### M3 — Experience matching & selection (Step 3)  ✅ Done (revised to experience-level)
 **Goal:** JD profile + material library → preliminary selection (no rewrite yet).
+**Design (revised per user feedback):** the unit of selection is the EXPERIENCE,
+not the bullet. Experiences are scored AS A WHOLE (category fit + keyword breadth)
+and the top N experiences / top M projects are kept; a selected experience keeps
+ALL its bullets. Targets are **section counts** (`target_experiences`,
+`target_projects`), not a bullet count. Bullet-level trimming for one-page fit is
+deferred to the Step 6 compile loop.
 - [x] Category-intersection filter to build the candidate pool
-- [x] `scoring.py`: standalone keyword-overlap scorer with **swappable `Scorer`
-  interface** (word-boundary matching; highlight keywords weighted 2× skills)
-- [x] Sort by score + priority, cap bullets per item, global `target_bullet_count`
-  trim that never empties a group
-- [x] Output `SelectionResult` (pre-rewrite) with per-bullet score + matched keywords
-- [x] `POST /select` endpoint; `GET /materials` pulled forward (UI needs titles)
-- [x] UI slice: "Selected experiences" panel in `index.html` (score badges +
-  matched-keyword chips), chained after Analyze; configurable target-bullets input
-- **Acceptance:** ✅ Pure functions, no LLM; scoring + selection unit-tested
-  (word-boundary, no-double-count, ordering, trim-keeps-one, category filter,
-  skills/education). pytest 19/19. Live `/select` + `/materials` verified.
+- [x] `scoring.py`: `score_bullet` (keyword overlap, word-boundary) as an ingredient,
+  plus `score_experience` (category fit + distinct-keyword breadth). Swappable
+  `ExperienceScorer` interface for later embedding upgrade.
+- [x] `step3_selection.select_experiences(target_experiences, target_projects)` —
+  rank whole experiences/projects, keep top-N, all bullets travel together
+- [x] `SelectionResult` carries experience-level `score` + `matched_keywords`
+- [x] `POST /select` (section-count targets); `GET /materials` for UI titles
+- [x] UI: "Selected experiences" panel — per-experience score + JD-keyword chips +
+  its full bullet list; "Experiences" / "Projects" count inputs
+- **Acceptance:** ✅ Pure functions, no LLM; unit-tested (bullet word-boundary,
+  experience category+keyword score, distinct keywords, whole-experience kept,
+  section-count limit, ranking, category filter, skills). pytest 34/34. Live
+  `/select` on the real "Joy Sun" library: 2 experiences (7 & 2 bullets, intact),
+  1 project, experience-level scores 10/8/3.
 
 ### M3.5 — Resume ingestion / auto-decompose  ✅ Done (pulled forward from Backlog)
 **Goal:** Upload an existing resume → LLM decomposes it into the material library,
@@ -173,6 +182,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M3-rev — ✅ Done. Reworked Step 3 from bullet-level to EXPERIENCE-level per user feedback: experiences scored & selected as whole units (all bullets kept together), targets are section counts (`target_experiences`/`target_projects`) not bullet count. Added `score_experience`, rewrote `select_experiences`, updated `/select` + UI (two count inputs, per-experience score). pytest 34/34; verified live on real library.
 - 2026-06-14 — M3.5d — ✅ Done (fixes + restyle per user feedback). (1) Bug fix: consecutive text appends lost earlier ones — append now merges into the client's CURRENT in-memory library (`base_library` form field) instead of the saved disk copy; regression-tested via TestClient with monkeypatched decompose (pytest 32/32). (2) Library view de-skeuomorphed: dropped the faux-PDF paper/serif look for a clean on-theme card view. (3) Switched the whole UI to a light, minimal theme with color accents; removed all emoji.
 - 2026-06-14 — M3.5c — ✅ Done (UI restructure per user feedback). Left-sidebar TAB layout: "Material Library" vs "Tailor to JD". Library now shows a concise, resume-like (paper/serif) view by default — title+org+dates with bullets listed underneath, skill tags hidden behind a per-experience "show tags" toggle. Manual add via paste → Parse & append. Granular editing moved behind an "Edit mode" toggle (reuses the form editor). Frontend-only; backend unchanged; pytest 31/31.
 - 2026-06-14 — M3.5b — ✅ Done. Replaced raw-JSON preview with a structured, scrollable, EDITABLE library editor (tagged/untagged badges, category toggles, add/remove items+bullets, inline tag edit). Added append-mode resume merge via tested `materials_merge.merge_libraries`. User has saved their real "Joy Sun" library. pytest 31/31.
