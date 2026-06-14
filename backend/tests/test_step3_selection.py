@@ -116,11 +116,13 @@ def test_target_counts_limit_sections():
     assert res.selected_projects[0].source_id == "proj_a"
 
 
-def test_category_filter_excludes_off_topic():
+def test_off_category_not_auto_selected_but_available():
     res = select_experiences(_jd_full(), _library(), target_experiences=5)
-    ids = {g.source_id for g in res.selected_experiences}
-    assert "exp_off" not in ids  # DE-only experience excluded
-    assert {"exp_strong", "exp_weak"} <= ids
+    selected = {g.source_id for g in res.selected_experiences}
+    assert "exp_off" not in selected           # score 0 -> not auto-picked
+    assert {"exp_strong", "exp_weak"} <= selected
+    # ...but it IS exposed in ranked so the user can manually add it.
+    assert "exp_off" in {g.source_id for g in res.ranked_experiences}
 
 
 def test_experiences_ranked_by_score():
@@ -155,14 +157,13 @@ def test_category_only_match_has_no_keywords():
     assert weak.score == weak.category_score     # selected purely on category fit
 
 
-def test_ranked_includes_all_candidates_for_manual_swap():
-    # target keeps 1, but ranked exposes all category-matching candidates so the
-    # UI can let the user add/replace.
+def test_ranked_includes_every_experience_for_manual_add():
+    # target keeps 1, but ranked exposes ALL experiences (even off-category /
+    # score 0) so the UI can let the user add any of them.
     res = select_experiences(_jd_full(), _library(), target_experiences=1)
     assert len(res.selected_experiences) == 1
     ranked_ids = {g.source_id for g in res.ranked_experiences}
-    assert {"exp_strong", "exp_weak"} <= ranked_ids
-    assert "exp_off" not in ranked_ids  # off-category still excluded entirely
+    assert {"exp_strong", "exp_weak", "exp_off"} <= ranked_ids
 
 
 def test_runs_on_sample_library():

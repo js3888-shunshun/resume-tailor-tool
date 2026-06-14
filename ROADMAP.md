@@ -145,8 +145,17 @@ selection, on the user's finalized (manually adjustable) working set.
   context titles, dict-wrap, no-op, missing-key). pytest 44/44. Real call: 3 bullets
   → 2 (dropped an irrelevant "team meetings" line; amplified the ML one to
   "Built an LLM-powered… applying RAG… 30%", strong verbs, kept the real metric).
-- **Note:** ATS keyword inference can slightly overreach (e.g. added "RAG"); a
-  per-bullet edit affordance is a good follow-up so the user can vet truthfulness.
+- **M4-rev2 (per user feedback — richer, not shorter):** flipped the prompt from
+  condense→**enrich**: aim 4-6 strong bullets/experience, expand detail, and the
+  user explicitly opted into *realistic embellishment* — may add plausible,
+  conservative, interview-defensible figures/details built on the real experience
+  (not a different job). Also `/select` now returns ALL experiences in `ranked_*`
+  (no category pre-filter) so the user can manually add ANY experience; auto-select
+  still only picks score>0. Verified: 1 sparse bullet → 6 enriched bullets with
+  realistic metrics; all 5 library experiences addable.
+- **Note:** embellishment now adds invented-but-plausible numbers by design — the
+  UI flags "review the after for accuracy"; a per-bullet edit affordance is the next
+  good follow-up so the user can vet/adjust before rendering.
 
 ### M5 — LaTeX template + rendering (Step 5)  ⬅️ Next
 **Goal:** Rewrite result → `.tex` file (page count not yet handled).
@@ -194,6 +203,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M4-rev2 — ✅ Done (per user feedback). Rewrite now ENRICHES (4-6 bullets, expand detail) with opt-in realistic embellishment (plausible figures/details on the real experience); UI flags "review for accuracy". `/select` returns ALL experiences in ranked_* (no category filter) so any can be manually added; auto-select still score>0. pytest 44/44; verified 1 bullet → 6 enriched, all 5 experiences addable.
 - 2026-06-14 — M4-rev — ✅ Done. Reworked rewriting from 1:1 (only changed syntax) to ATS-oriented WHOLE-EXPERIENCE rewrite: amplify JD-relevant points, condense/drop weak ones (bullet count can shrink), surface JD keywords/skills, strong verbs, quantify where supported, no fabrication. Output to `rewritten_bullets`; UI shows experience-level before→after with count delta. pytest 44/44; real call dropped an irrelevant bullet and lifted ATS keywords while keeping the real metric.
 - 2026-06-14 — M4 — ✅ Done. Content rewriting after selection: `step4_rewrite.rewrite_selected` (one batched LLM call, JSON array, id-mapped write-back, original fallback), `rewrite.py` prompt (truthful/keyword-aware/length-preserving), `POST /rewrite`. UI: prominent "Polish to JD" CTA on the working selection + before→after panel. pytest 43/43; real call kept metrics and used JD keywords only where applicable.
 - 2026-06-14 — M3-rev2 — ✅ Done (transparency + manual override per user feedback). score_experience now returns a breakdown (category_score, keyword_score, matched_categories); SelectionResult also returns `ranked_experiences/projects` (all candidates, not just top-N). UI: each pick shows a "why" line (matched JD categories + keywords, or "category only" when no keyword) and the score split on hover; user can remove any pick and add others from a ranked dropdown. pytest 37/37; verified live (selected 2 of 5 ranked, breakdown correct).

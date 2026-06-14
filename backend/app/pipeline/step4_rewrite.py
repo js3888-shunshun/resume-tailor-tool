@@ -88,7 +88,7 @@ def rewrite_selected(
         skills=", ".join(jd.key_skills) or "(none)",
         experiences=json.dumps(payload, ensure_ascii=False),
     )
-    raw = client.complete_json(REWRITE_SYSTEM, user, max_tokens=4096)
+    raw = client.complete_json(REWRITE_SYSTEM, user, max_tokens=6144)
     by_id = {r["id"]: r for r in _coerce_array(raw) if isinstance(r, dict) and "id" in r}
 
     rewritten_groups = 0

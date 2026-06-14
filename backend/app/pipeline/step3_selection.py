@@ -63,9 +63,13 @@ def _rank(
     jd: JDProfile,
     scorer: ExperienceScorer,
 ) -> List[SelectedExperience]:
-    """Filter by category intersection and rank every candidate, best first."""
-    cats = _categories_of_interest(jd)
-    scored = [(item, scorer(item, jd)) for item in items if set(item.categories) & cats]
+    """Score and rank EVERY candidate (no category pre-filter), best first.
+
+    Returning all items — even score 0 — lets the UI offer any experience for
+    manual add/swap. The default auto-selection (see `select_experiences`) still
+    only auto-picks relevant ones (score > 0).
+    """
+    scored = [(item, scorer(item, jd)) for item in items]
     # Best first; tiebreak by bullet count (richer experience first).
     scored.sort(key=lambda pair: (pair[1].score, len(pair[0].bullets)), reverse=True)
     return [_to_selected(item, es) for item, es in scored]
@@ -92,10 +96,14 @@ def select_experiences(
     ranked_exp = _rank(library.experiences, jd, scorer)
     ranked_proj = _rank(library.projects, jd, scorer)
 
+    # Auto-pick only relevant ones (score > 0); ranked_* still exposes everything
+    # so the user can manually add any experience, including off-category ones.
+    relevant_exp = [g for g in ranked_exp if g.score > 0]
+    relevant_proj = [g for g in ranked_proj if g.score > 0]
     result = SelectionResult(
         selected_education=_select_education(library.education),
-        selected_experiences=ranked_exp[: max(0, target_experiences)],
-        selected_projects=ranked_proj[: max(0, target_projects)],
+        selected_experiences=relevant_exp[: max(0, target_experiences)],
+        selected_projects=relevant_proj[: max(0, target_projects)],
         selected_skills=_select_skills(library.skills, jd),
         ranked_experiences=ranked_exp,
         ranked_projects=ranked_proj,
