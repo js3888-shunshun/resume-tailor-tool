@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from pydantic import ValidationError
 
 from ..config import get_settings
 from ..llm import LLMError
@@ -35,12 +36,15 @@ async def ingest_resume(
     file: Optional[UploadFile] = File(default=None),
     resume_text: str = Form(default=""),
     mode: str = Form(default="replace"),  # "replace" | "append"
+    base_library: str = Form(default=""),  # JSON of the library to append into
 ) -> MaterialsLibrary:
     """Decompose an uploaded resume (file and/or pasted text) into a library.
 
-    mode="append" merges the parse into the currently SAVED user library (adding
-    only new experiences/bullets/skills). Returns the (possibly merged) library
-    for PREVIEW; nothing is saved until PUT /materials.
+    mode="append" merges the parse into a base library, adding only new
+    experiences/bullets/skills. The base is `base_library` (the client's current
+    in-memory library) when provided — this lets consecutive appends accumulate
+    without saving in between — otherwise the saved user library on disk.
+    Returns the (possibly merged) library for PREVIEW; nothing is saved until PUT.
     """
     text = resume_text or ""
     if file is not None:
@@ -60,11 +64,19 @@ async def ingest_resume(
     except LLMError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
-    settings = get_settings()
-    if mode == "append" and settings.materials_path.exists():
-        base = load_materials()  # the saved user library
-        return merge_libraries(base, parsed)
-    return parsed
+    if mode != "append":
+        return parsed
+
+    base: Optional[MaterialsLibrary] = None
+    if base_library.strip():
+        try:
+            base = MaterialsLibrary.model_validate_json(base_library)
+        except ValidationError as e:
+            raise HTTPException(status_code=422, detail=f"Invalid base_library: {e}")
+    elif get_settings().materials_path.exists():
+        base = load_materials()
+
+    return merge_libraries(base, parsed) if base is not None else parsed
 
 
 @router.put("/materials")
