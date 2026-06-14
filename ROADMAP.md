@@ -127,16 +127,23 @@ so selection runs on the user's real experiences instead of sample data.
   tested module (6 tests: bullet-append, new-item, skill-cat-union, edu-dedup,
   id-renumber, no-base-mutation). pytest 31/31.
 
-### M4 — Content rewriting module (Step 4)  ⬅️ Next
-> UI slice: show before/after text for each rewritten bullet in the selection panel.
+### M4 — Content rewriting module (Step 4)  ✅ Done
 **Goal:** Selected bullets + JD profile → rewritten results (with matched_keywords).
-- [ ] Batch all bullets into one LLM call, return a JSON array
-- [ ] Prompt constraints: no fabrication, use JD keywords, similar length, label matched keywords
-- [ ] Output conforms to the selection & rewrite schema
-- **Acceptance:** Rewritten length close to original; `matched_keywords` only
-  contains keywords actually present; schema validates.
+Runs AFTER selection, on the user's finalized (manually adjustable) working set.
+- [x] `pipeline/step4_rewrite.rewrite_selected`: batches ALL selected bullets into
+  one LLM call (JSON array back), maps results back by temp id, fills
+  `rewritten_text` + `matched_keywords`; falls back to original if an item is missing
+- [x] Prompt (`llm/prompts/rewrite.py`): no fabrication, prefer JD keywords only
+  where applicable, keep length close, preserve real metrics, label keywords used
+- [x] `POST /rewrite` (jd_profile + selected_experiences/projects)
+- [x] UI: prominent "Polish to JD" CTA after selection; before→after panel with
+  JD-keyword chips and "unchanged" marker
+- **Acceptance:** ✅ Unit-tested with mock (fill, global-id batching across exp+proj,
+  missing-item fallback, dict-wrapped array, no-op, missing-key). pytest 43/43.
+  Real call verified: "...using machine learning..." → "...LLM-powered..." (kept the
+  30% metric, used `LLM`, did NOT bolt on unrelated keywords).
 
-### M5 — LaTeX template + rendering (Step 5)
+### M5 — LaTeX template + rendering (Step 5)  ⬅️ Next
 **Goal:** Rewrite result → `.tex` file (page count not yet handled).
 - [ ] `resume.tex.j2` template (based on the user's existing resume style)
 - [ ] Jinja2 env + custom LaTeX-escape filter (`& % _ # $`, etc.)
@@ -182,6 +189,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-14 — M4 — ✅ Done. Content rewriting after selection: `step4_rewrite.rewrite_selected` (one batched LLM call, JSON array, id-mapped write-back, original fallback), `rewrite.py` prompt (truthful/keyword-aware/length-preserving), `POST /rewrite`. UI: prominent "Polish to JD" CTA on the working selection + before→after panel. pytest 43/43; real call kept metrics and used JD keywords only where applicable.
 - 2026-06-14 — M3-rev2 — ✅ Done (transparency + manual override per user feedback). score_experience now returns a breakdown (category_score, keyword_score, matched_categories); SelectionResult also returns `ranked_experiences/projects` (all candidates, not just top-N). UI: each pick shows a "why" line (matched JD categories + keywords, or "category only" when no keyword) and the score split on hover; user can remove any pick and add others from a ranked dropdown. pytest 37/37; verified live (selected 2 of 5 ranked, breakdown correct).
 - 2026-06-14 — M3-rev — ✅ Done. Reworked Step 3 from bullet-level to EXPERIENCE-level per user feedback: experiences scored & selected as whole units (all bullets kept together), targets are section counts (`target_experiences`/`target_projects`) not bullet count. Added `score_experience`, rewrote `select_experiences`, updated `/select` + UI (two count inputs, per-experience score). pytest 34/34; verified live on real library.
 - 2026-06-14 — M3.5d — ✅ Done (fixes + restyle per user feedback). (1) Bug fix: consecutive text appends lost earlier ones — append now merges into the client's CURRENT in-memory library (`base_library` form field) instead of the saved disk copy; regression-tested via TestClient with monkeypatched decompose (pytest 32/32). (2) Library view de-skeuomorphed: dropped the faux-PDF paper/serif look for a clean on-theme card view. (3) Switched the whole UI to a light, minimal theme with color accents; removed all emoji.

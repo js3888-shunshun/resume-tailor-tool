@@ -16,6 +16,7 @@ from .config import get_settings
 from .latex_tools import INSTALL_HINT, detect_latex_engine
 from .routers import jd as jd_router
 from .routers import materials as materials_router
+from .routers import rewrite as rewrite_router
 from .routers import selection as selection_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
@@ -27,6 +28,7 @@ app = FastAPI(title="AI Resume Tailor", version="0.1.0")
 app.include_router(jd_router.router)
 app.include_router(selection_router.router)
 app.include_router(materials_router.router)
+app.include_router(rewrite_router.router)
 
 
 @app.get("/", include_in_schema=False)
