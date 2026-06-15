@@ -18,6 +18,7 @@ from .render import (
     RenderEducation,
     RenderEntry,
     ResumeDocument,
+    SkillGroup,
 )
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     "RenderEducation",
     "RenderEntry",
     "ResumeDocument",
+    "SkillGroup",
 ]

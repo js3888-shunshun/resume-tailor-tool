@@ -27,6 +27,7 @@ class PersonalInfo(BaseModel):
     name: str
     email: str
     phone: str
+    location: str = ""
     links: List[str] = Field(default_factory=list)
 
 
@@ -35,6 +36,8 @@ class Education(BaseModel):
     school: str
     degree: str
     major: str
+    location: str = ""
+    gpa: str = ""
     start_date: str
     end_date: str
     details: List[str] = Field(default_factory=list)
@@ -64,6 +67,9 @@ class Experience(BaseModel):
 class Project(BaseModel):
     id: str
     title: str
+    organization: str = ""
+    start_date: str = ""
+    end_date: str = ""
     categories: List[Category] = Field(default_factory=list)
     bullets: List[Bullet] = Field(default_factory=list)
 

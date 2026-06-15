@@ -30,6 +30,13 @@ class RenderEducation(BaseModel):
     details: List[str] = Field(default_factory=list)
 
 
+class SkillGroup(BaseModel):
+    """A JD-tailored, labeled cluster of skills, e.g. label="ML & Data"."""
+
+    label: str
+    skills: List[str] = Field(default_factory=list)
+
+
 class RenderBullet(BaseModel):
     text: str
     # JD keywords to wrap in \hlkw within this bullet (subset of `text`).
@@ -37,8 +44,14 @@ class RenderBullet(BaseModel):
 
 
 class RenderEntry(BaseModel):
-    """One experience or project. Empty segments are omitted at render time."""
+    """One experience or project. Empty segments are omitted at render time.
 
+    `kind` picks the heading layout:
+    - "experience": \\textbf{org} | \\textit{title} | location \\hfill dates
+    - "project":    \\textbf{title} | org \\hfill dates
+    """
+
+    kind: str = "experience"
     organization: str = ""
     title: str = ""
     location: str = ""
@@ -49,6 +62,9 @@ class RenderEntry(BaseModel):
 class ResumeDocument(BaseModel):
     contact: RenderContact
     education: List[RenderEducation] = Field(default_factory=list)
+    # JD-tailored, labeled skill groups (rendered two-up like the user's resume).
+    # If empty, `skills` is rendered as a single flat line instead.
+    skill_groups: List[SkillGroup] = Field(default_factory=list)
     skills: List[str] = Field(default_factory=list)
     experiences: List[RenderEntry] = Field(default_factory=list)
     projects: List[RenderEntry] = Field(default_factory=list)

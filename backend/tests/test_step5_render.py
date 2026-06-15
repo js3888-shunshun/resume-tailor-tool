@@ -9,6 +9,7 @@ from app.schemas import (
     RenderEducation,
     RenderEntry,
     ResumeDocument,
+    SkillGroup,
 )
 
 
@@ -76,7 +77,7 @@ def _doc(**kw) -> ResumeDocument:
         experiences=[RenderEntry(organization="ByteDance", title="DS Intern", location="Beijing",
                                  date_range="Feb 2025 – May 2025",
                                  bullets=[RenderBullet(text="Built RAG in Python", keywords=["RAG"])])],
-        projects=[RenderEntry(title="Text-to-SQL",
+        projects=[RenderEntry(kind="project", title="Text-to-SQL",
                               bullets=[RenderBullet(text="F1 of 0.665")])],
         projects_heading="Research Experience",
     )
@@ -124,3 +125,46 @@ def test_render_omits_empty_sections():
 def test_render_skills_line_escaped():
     tex = render_resume(_doc(skills=["C#", "A&B"]))
     assert r"C\#, A\&B" in tex
+
+
+# ---- JD-tailored grouped skills + new header fields ----------------------
+
+def test_render_grouped_skills_two_up():
+    tex = render_resume(_doc(skill_groups=[
+        SkillGroup(label="Programming", skills=["Python", "SQL"]),
+        SkillGroup(label="ML & Data", skills=["PyTorch"]),
+        SkillGroup(label="Tools", skills=["Git"]),
+    ]))
+    # Labels bold, skills listed, first two groups share a row via \hfill.
+    assert r"\textbf{Programming:} Python, SQL \hfill \textbf{ML \& Data:} PyTorch" in tex
+    assert r"\textbf{Tools:} Git" in tex
+    # Balanced braces survive the grouped layout.
+    assert tex.count("{") == tex.count("}")
+
+
+def test_render_grouped_skills_override_flat():
+    tex = render_resume(_doc(skills=["ZZZ"], skill_groups=[SkillGroup(label="Lang", skills=["Go"])]))
+    assert r"\textbf{Lang:} Go" in tex
+    assert "ZZZ" not in tex  # flat list ignored when groups present
+
+
+def test_render_project_heading_title_first():
+    tex = render_resume(_doc(projects=[RenderEntry(
+        kind="project", title="Text-to-SQL", organization="Cornell Tech", date_range="Apr 2026",
+        bullets=[RenderBullet(text="built it")])]))
+    # Project: bold title first, then org, no italic.
+    assert r"\textbf{Text-to-SQL} | Cornell Tech \hfill Apr 2026" in tex
+    assert r"\textit{Text-to-SQL}" not in tex
+
+
+def test_render_education_location_and_gpa():
+    tex = render_resume(_doc(education=[RenderEducation(
+        school="Cornell", location="New York, NY", degree_line="MEng in DS, GPA: 3.9/4.0",
+        date="May 2026")]))
+    assert r"\textbf{Cornell} \hfill New York, NY" in tex
+    assert "GPA: 3.9/4.0" in tex
+
+
+def test_render_contact_location():
+    tex = render_resume(_doc(contact=RenderContact(name="J", email="j@x.com", location="NYC")))
+    assert "Email: j@x.com | NYC" in tex

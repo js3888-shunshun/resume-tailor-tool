@@ -32,6 +32,7 @@ from ..schemas import (
     RenderEntry,
     ResumeDocument,
     SelectedExperience,
+    SkillGroup,
 )
 
 router = APIRouter(tags=["render"])
@@ -41,6 +42,9 @@ class RenderRequest(BaseModel):
     jd_profile: Optional[JDProfile] = None
     selected_experiences: List[SelectedExperience] = Field(default_factory=list)
     selected_projects: List[SelectedExperience] = Field(default_factory=list)
+    # JD-tailored, labeled skill groups (from Polish). Rendered two-up. If empty,
+    # `skills` (or all library skills) is rendered as one flat line.
+    skill_groups: List[SkillGroup] = Field(default_factory=list)
     # The selection's chosen skill names; falls back to all library skills if empty.
     skills: List[str] = Field(default_factory=list)
     highlight: bool = True
@@ -72,9 +76,10 @@ def _date_range(start: str, end: str) -> str:
 
 def _degree_line(ed: Education) -> str:
     degree, major = ed.degree.strip(), ed.major.strip()
-    if major and major.lower() not in degree.lower():
-        return f"{degree} in {major}" if degree else major
-    return degree
+    line = f"{degree} in {major}" if (major and major.lower() not in degree.lower() and degree) else (degree or major)
+    if ed.gpa.strip():
+        line = f"{line}, GPA: {ed.gpa.strip()}" if line else f"GPA: {ed.gpa.strip()}"
+    return line
 
 
 def _experience_entry(group: SelectedExperience, exp: Optional[Experience]) -> RenderEntry:
@@ -89,7 +94,10 @@ def _experience_entry(group: SelectedExperience, exp: Optional[Experience]) -> R
 
 def _project_entry(group: SelectedExperience, proj: Optional[Project]) -> RenderEntry:
     return RenderEntry(
+        kind="project",
+        organization=proj.organization if proj else "",
         title=proj.title if proj else group.source_id,
+        date_range=_date_range(proj.start_date, proj.end_date) if proj else "",
         bullets=_bullets(group),
     )
 
@@ -102,11 +110,13 @@ def _build_document(req: RenderRequest, lib: MaterialsLibrary) -> ResumeDocument
         name=lib.personal_info.name,
         email=lib.personal_info.email,
         phone=lib.personal_info.phone,
+        location=lib.personal_info.location,
         links=lib.personal_info.links,
     )
     education = [
         RenderEducation(
             school=ed.school,
+            location=ed.location,
             degree_line=_degree_line(ed),
             date=ed.end_date or ed.start_date,
             details=ed.details,
@@ -125,6 +135,7 @@ def _build_document(req: RenderRequest, lib: MaterialsLibrary) -> ResumeDocument
     return ResumeDocument(
         contact=contact,
         education=education,
+        skill_groups=req.skill_groups,
         skills=skills,
         experiences=experiences,
         projects=projects,

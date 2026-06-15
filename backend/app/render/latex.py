@@ -80,20 +80,22 @@ def _sub_outside_hlkw(pattern: re.Pattern, text: str) -> str:
 def _entry_head(entry: RenderEntry) -> str:
     """Build the bold title line for one experience/project, omitting blanks.
 
-    Experience (has organization): \\textbf{org} | \\textit{title} | location \\hfill dates
-    Project    (title only):       \\textbf{title} \\hfill dates
+    experience: \\textbf{org} | \\textit{title} | location \\hfill dates
+    project:    \\textbf{title} | org \\hfill dates
     """
-    if entry.organization:
-        left = [r"\textbf{%s}" % latex_escape(entry.organization)]
-        if entry.title:
+    if entry.kind == "project":
+        left = [r"\textbf{%s}" % latex_escape(entry.title)]
+        if entry.organization:
+            left.append(latex_escape(entry.organization))
+        if entry.location:
+            left.append(latex_escape(entry.location))
+    else:
+        left = [r"\textbf{%s}" % latex_escape(entry.organization or entry.title)]
+        if entry.organization and entry.title:
             left.append(r"\textit{%s}" % latex_escape(entry.title))
         if entry.location:
             left.append(latex_escape(entry.location))
-        head = " | ".join(left)
-    else:
-        head = r"\textbf{%s}" % latex_escape(entry.title)
-        if entry.location:
-            head += " | " + latex_escape(entry.location)
+    head = " | ".join(left)
     if entry.date_range:
         head += r" \hfill " + latex_escape(entry.date_range)
     return head
@@ -113,6 +115,24 @@ def _contact_line(doc: ResumeDocument) -> str:
 
 def _skills_line(skills: Iterable[str]) -> str:
     return ", ".join(latex_escape(s) for s in skills if str(s).strip())
+
+
+def _skills_block(doc: ResumeDocument) -> str:
+    """The body of the Technical Skills section.
+
+    With JD-tailored `skill_groups`, render labeled groups two-up per row
+    (\\textbf{label:} a, b \\hfill \\textbf{label:} c, d), mirroring the user's
+    resume. Otherwise fall back to a single flat comma list.
+    """
+    groups = [g for g in doc.skill_groups if g.label.strip() and g.skills]
+    if not groups:
+        return _skills_line(doc.skills)
+    cells = [
+        r"\textbf{%s:} %s" % (latex_escape(g.label), _skills_line(g.skills))
+        for g in groups
+    ]
+    rows = [r" \hfill ".join(cells[i:i + 2]) for i in range(0, len(cells), 2)]
+    return " \\\\\n    ".join(rows)
 
 
 def _build_env() -> jinja2.Environment:
@@ -143,5 +163,5 @@ def render_resume(doc: ResumeDocument) -> str:
     return template.render(
         doc=doc,
         contact_line=_contact_line(doc),
-        skills_line=_skills_line(doc.skills),
+        skills_block=_skills_block(doc),
     )

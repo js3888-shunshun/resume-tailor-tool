@@ -22,16 +22,26 @@ Output rules (STRICT):
   bullet is (3 = strongest), default 2.
 - `proficiency` for skills: only if clearly implied, else "".
 
+- `location` (personal_info / education / experience): "City, Country" if present,
+  else "". `gpa` (education): the GPA string exactly as written (e.g. "3.9/4.0" or
+  "3.8/4.0 (Top 10%)"), else "". Keep GPA out of `details` — put it in `gpa`.
+  `degree`/`major` should NOT contain the GPA.
+- `organization` (project): the host/affiliation if the project lists one (e.g.
+  "Cornell Tech"), else "". `start_date`/`end_date` (project): if a single date is
+  shown, put it in `end_date` and leave `start_date` "".
+
 Required JSON shape (MaterialsLibrary):
 {
-  "personal_info": {"name": str, "email": str, "phone": str, "links": [str]},
+  "personal_info": {"name": str, "email": str, "phone": str, "location": str, "links": [str]},
   "education": [{"id": str, "school": str, "degree": str, "major": str,
-                 "start_date": str, "end_date": str, "details": [str]}],
+                 "location": str, "gpa": str, "start_date": str, "end_date": str,
+                 "details": [str]}],
   "experiences": [{"id": str, "title": str, "organization": str, "location": str,
                    "start_date": str, "end_date": str, "categories": [str],
                    "bullets": [{"id": str, "text": str, "skill_tags": [str],
                                 "impact_metrics": str or null, "priority": int}]}],
-  "projects": [{"id": str, "title": str, "categories": [str],
+  "projects": [{"id": str, "title": str, "organization": str,
+                "start_date": str, "end_date": str, "categories": [str],
                 "bullets": [ ...same bullet shape... ]}],
   "skills": [{"name": str, "categories": [str], "proficiency": str}]
 }"""

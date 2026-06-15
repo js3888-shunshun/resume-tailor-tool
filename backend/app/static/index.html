@@ -160,6 +160,10 @@
     textarea.auto { overflow:hidden; resize:none; min-height:0; line-height:1.45; font-family:inherit; font-size:13px; }
     .rw-x { color:var(--err); cursor:pointer; font-weight:700; padding-top:6px; line-height:1; user-select:none; font-size:16px; }
     .rw-x:hover { opacity:.7; }
+    .sk-group { margin-bottom:10px; }
+    .sk-grouphead { display:flex; gap:8px; align-items:center; margin-bottom:4px; }
+    .sk-label { font-weight:700; max-width:280px; }
+    .sk-prev .sk-prevrow { margin-bottom:5px; font-size:13px; line-height:1.5; }
     .rw-orig { margin-top:8px; }
     .rw-orig summary { font-size:11px; color:var(--muted); cursor:pointer; }
     .rw-orig ul { margin:6px 0 0; padding-left:18px; }
@@ -435,7 +439,8 @@ versions in production is required. Fast-paced startup environment.`;
     }
     function expItem(exp, idx, kind) {
       const isProj = kind === 'projects';
-      const grid = isProj ? h('div', { class: 'item-grid' }, field('Title', inp(exp, 'title')))
+      const grid = isProj ? h('div', { class: 'item-grid' }, field('Title', inp(exp, 'title')), field('Organization', inp(exp, 'organization')),
+            field('Start', inp(exp, 'start_date')), field('End', inp(exp, 'end_date')))
         : h('div', { class: 'item-grid' }, field('Title', inp(exp, 'title')), field('Organization', inp(exp, 'organization')),
             field('Location', inp(exp, 'location')), field('Start', inp(exp, 'start_date')), field('End', inp(exp, 'end_date')));
       const bulletsWrap = h('div', {}, (exp.bullets || []).map((b, bi) => bulletBlock(exp, b, bi)),
@@ -451,7 +456,8 @@ versions in production is required. Fast-paced startup environment.`;
         h('div', { class: 'item-head' }, h('span', { class: 'muted', style: 'font-size:12px;' }, edu.id || '(new)'),
           h('button', { class: 'mini danger', type: 'button', onclick: () => { LIBRARY.education.splice(idx, 1); renderEditor(); } }, 'Delete')),
         h('div', { class: 'item-grid' }, field('School', inp(edu, 'school')), field('Degree', inp(edu, 'degree')),
-          field('Major', inp(edu, 'major')), field('Start', inp(edu, 'start_date')), field('End', inp(edu, 'end_date'))),
+          field('Major', inp(edu, 'major')), field('Location', inp(edu, 'location')), field('GPA', inp(edu, 'gpa')),
+          field('Start', inp(edu, 'start_date')), field('End', inp(edu, 'end_date'))),
         field('Details (one per line)', detailsInput(edu)));
     }
     function skillItem(s, idx) {
@@ -475,15 +481,15 @@ versions in production is required. Fast-paced startup environment.`;
         h('span', { class: untag ? 'warn' : 'okk' }, `${untag} untagged`), ` · ${(LIBRARY.skills || []).length} skills`));
       const pi = LIBRARY.personal_info || (LIBRARY.personal_info = { name: '', email: '', phone: '', links: [] });
       c.appendChild(section('Personal info', null, null,
-        h('div', { class: 'pi-grid' }, field('Name', inp(pi, 'name')), field('Email', inp(pi, 'email')), field('Phone', inp(pi, 'phone')), field('Links', linksInput(pi)))));
+        h('div', { class: 'pi-grid' }, field('Name', inp(pi, 'name')), field('Email', inp(pi, 'email')), field('Phone', inp(pi, 'phone')), field('Location', inp(pi, 'location')), field('Links', linksInput(pi)))));
       c.appendChild(section('Education', '+ education',
-        () => { LIBRARY.education = LIBRARY.education || []; LIBRARY.education.push({ id: '', school: '', degree: '', major: '', start_date: '', end_date: '', details: [] }); renderEditor(); },
+        () => { LIBRARY.education = LIBRARY.education || []; LIBRARY.education.push({ id: '', school: '', degree: '', major: '', location: '', gpa: '', start_date: '', end_date: '', details: [] }); renderEditor(); },
         (LIBRARY.education || []).map((e, i) => eduItem(e, i))));
       c.appendChild(section('Experiences', '+ experience',
         () => { LIBRARY.experiences = LIBRARY.experiences || []; LIBRARY.experiences.push({ id: '', title: '', organization: '', location: '', start_date: '', end_date: '', categories: [], bullets: [] }); renderEditor(); },
         (LIBRARY.experiences || []).map((e, i) => expItem(e, i, 'experiences'))));
       c.appendChild(section('Projects', '+ project',
-        () => { LIBRARY.projects = LIBRARY.projects || []; LIBRARY.projects.push({ id: '', title: '', categories: [], bullets: [] }); renderEditor(); },
+        () => { LIBRARY.projects = LIBRARY.projects || []; LIBRARY.projects.push({ id: '', title: '', organization: '', start_date: '', end_date: '', categories: [], bullets: [] }); renderEditor(); },
         (LIBRARY.projects || []).map((e, i) => expItem(e, i, 'projects'))));
       c.appendChild(section('Skills', '+ skill',
         () => { LIBRARY.skills = LIBRARY.skills || []; LIBRARY.skills.push({ name: '', categories: [], proficiency: '' }); renderEditor(); },
@@ -694,7 +700,9 @@ versions in production is required. Fast-paced startup environment.`;
           cols,
           kwAll.length ? h('div', { class: 'chips', style: 'margin-top:10px;' }, kwAll.map((k) => h('span', { class: 'chip kw' }, k))) : null));
       });
-      $('rw-summary').textContent = `${groups.length} experiences · ${afterN} bullets`;
+      const sg = data.skill_groups || [];
+      if (sg.length || RW_VIEW === 'edit') body.appendChild(renderSkillsSection(data));
+      $('rw-summary').textContent = `${groups.length} experiences · ${afterN} bullets · ${sg.length} skill groups`;
       $('rw-raw').textContent = JSON.stringify(data, null, 2);
       $('rwToggleBtn').textContent = RW_VIEW === 'edit' ? 'Preview' : 'Edit';
       $('rewrite').style.display = 'block';
@@ -702,11 +710,41 @@ versions in production is required. Fast-paced startup environment.`;
       if (RW_VIEW === 'edit') requestAnimationFrame(() => document.querySelectorAll('#rw-body textarea.auto').forEach(autoGrow));
     }
 
+    function renderSkillsSection(data) {
+      data.skill_groups = data.skill_groups || [];
+      const wrap = h('div', { class: 'rw-entry' });
+      wrap.appendChild(h('div', { class: 'rw-title' }, 'Skills (regrouped & tailored to JD)',
+        h('span', { class: 'rw-count' }, `   ${data.skill_groups.length} groups`)));
+      if (RW_VIEW === 'edit') {
+        data.skill_groups.forEach((g, i) => {
+          g.skills = g.skills || [];
+          const label = h('input', { class: 'edit sk-label', val: g.label || '', placeholder: 'Group label (e.g. Programming)' });
+          label.addEventListener('input', (e) => { g.label = e.target.value; markDirty(); });
+          const ta = h('textarea', { class: 'edit auto', rows: '1', val: g.skills.join(', '), placeholder: 'comma, separated, skills' });
+          ta.addEventListener('input', (e) => { g.skills = e.target.value.split(',').map((s) => s.trim()).filter(Boolean); autoGrow(ta); markDirty(); });
+          const x = h('span', { class: 'rw-x', title: 'remove group',
+            onclick: () => { data.skill_groups.splice(i, 1); renderRewrite(REWRITE_DRAFT); markDirty(); } }, '×');
+          wrap.appendChild(h('div', { class: 'sk-group' }, h('div', { class: 'sk-grouphead' }, label, x), ta));
+        });
+        wrap.appendChild(h('button', { class: 'mini', type: 'button',
+          onclick: () => { data.skill_groups.push({ label: '', skills: [] }); renderRewrite(REWRITE_DRAFT); markDirty(); } }, '+ group'));
+      } else {
+        const prev = h('div', { class: 'sk-prev' });
+        data.skill_groups.forEach((g) => prev.appendChild(
+          h('div', { class: 'sk-prevrow' }, h('b', {}, (g.label || '') + ': '), (g.skills || []).join(', '))));
+        wrap.appendChild(prev);
+      }
+      return wrap;
+    }
+
     function finalizeDraft() {
       if (!REWRITE_DRAFT) return;
-      // Drop empty bullets, then snapshot.
+      // Drop empty bullets and empty skill groups, then snapshot.
       [...(REWRITE_DRAFT.selected_experiences || []), ...(REWRITE_DRAFT.selected_projects || [])]
         .forEach((g) => { g.rewritten_bullets = (g.rewritten_bullets || []).filter((b) => (b.rewritten_text || '').trim()); });
+      REWRITE_DRAFT.skill_groups = (REWRITE_DRAFT.skill_groups || [])
+        .map((g) => ({ label: (g.label || '').trim(), skills: (g.skills || []).filter((s) => (s || '').trim()) }))
+        .filter((g) => g.label && g.skills.length);
       renderRewrite(REWRITE_DRAFT);
       FINAL_DRAFT = JSON.parse(JSON.stringify(REWRITE_DRAFT));
       const n = [...(FINAL_DRAFT.selected_experiences || []), ...(FINAL_DRAFT.selected_projects || [])]
@@ -725,6 +763,7 @@ versions in production is required. Fast-paced startup environment.`;
         const body = {
           selected_experiences: FINAL_DRAFT.selected_experiences || [],
           selected_projects: FINAL_DRAFT.selected_projects || [],
+          skill_groups: FINAL_DRAFT.skill_groups || [],
           skills: (WORKING && WORKING.skills) || [],
           highlight: $('hlToggle').checked,
           projects_heading: 'Research Experience',

@@ -188,10 +188,22 @@ selection, on the user's finalized (manually adjustable) working set.
   escaped; `pdf_available:false` (no engine yet, as expected).
 - **⚠️ Dependency (PDF only):** install tectonic (`winget install
   TectonicProject.Tectonic`) or pdflatex to turn the `.tex` into a PDF in-app.
-- **Schema-gap follow-ups (M6/M8):** `PersonalInfo` has no `location`;
-  `Education` has no `location`/`gpa` (decompose currently parks GPA & city in
-  `details`); `Project` has no `organization`/`date`. Add these fields + update
-  the decompose prompt so the rendered resume regains those header pieces.
+- **M5-rev (schema completion + JD-tailored skills):**
+  - ✅ Added the missing header fields — `PersonalInfo.location`,
+    `Education.location`/`gpa`, `Project.organization`/`start_date`/`end_date` —
+    updated the decompose prompt to extract them (GPA out of `details`), the
+    render router/template to use them, and the library editor to expose them
+    (so existing saved data can be completed without re-uploading).
+  - ✅ JD-tailored SKILLS: new `step4_skills.tailor_skills` (LLM regroups &
+    prioritizes the library's skills into labeled, JD-relevant `SkillGroup`s,
+    surfacing JD skills, trimming irrelevant ones; truthful to the inventory).
+    Returned by `/rewrite` (Polish step), editable in the polish panel (add/edit/
+    remove groups), carried into `FINAL_DRAFT` and rendered two-up like the user's
+    resume (`\textbf{label:} a, b \hfill ...`); flat list is the fallback.
+  - Project heading layout fixed (\\textbf{title} | org \\hfill date) vs experience
+    (\\textbf{org} | \\textit{title} | location \\hfill date) via `RenderEntry.kind`.
+  - pytest 64/64. Live: real `/rewrite` regrouped 50 skills → 5 JD groups (ML & AI
+    first, finance skills dropped for an MLE JD); grouped render two-up verified.
 
 ### M6 — Compile + one-page check loop (Step 6, core agent loop)
 **Goal:** `.tex` → compile → check page count → compress & retry if too long,
@@ -228,6 +240,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-15 — M5-rev — ✅ Done. (1) Completed the resume header schema: added `PersonalInfo.location`, `Education.location/gpa`, `Project.organization/start_date/end_date`; updated decompose prompt (GPA out of details), render router/template, and the library editor inputs. (2) JD-tailored skills: `step4_skills.tailor_skills` (LLM regroups/prioritizes/trims the library skills into labeled `SkillGroup`s), returned by `/rewrite`, editable in the polish panel, carried into FINAL_DRAFT, rendered two-up like the user's resume. (3) Fixed project vs experience heading layout via `RenderEntry.kind`. pytest 64/64; live real `/rewrite` turned 50 skills into 5 JD-relevant groups (ML&AI first, finance dropped for an MLE JD).
 - 2026-06-15 — M5 — ✅ Done. LaTeX rendering (Step 5): `resume.tex.j2` modeled on the user's own resume; Jinja2 env with `\VAR{}`/`\BLOCK{}` delimiters + single-pass `latex_escape`; `\hlkw` bold keyword highlight (`render_bullet`, word-boundary/longest-first/no double-wrap); pure renderer over a self-contained `ResumeDocument`; `/render` assembles it from library + finalized rewrite (omits blank segments), best-effort tectonic/pdflatex compile, `GET /render/pdf`. UI: "Resume document" card (Generate, keyword toggle, Download .tex/PDF). pytest 55/55; live render on real library produced a valid one-page .tex with balanced braces and escaped specials (`pdf_available:false` — no engine installed yet). Logged schema gaps (location/gpa/project meta) for M6/M8.
 - 2026-06-14 — M4-rev4 — ✅ Done. Polished-result panel got a preview/edit toggle: clean read-only preview by default; Edit mode gives per-bullet auto-growing textareas (full text visible, no inner scroll) with delete/add. Frontend-only; pytest 44/44.
 - 2026-06-14 — M4-rev3 — ✅ Done. Made the "after" column editable (per-bullet textarea, add/remove) backed by client-side REWRITE_DRAFT; "Finalize draft" snapshots FINAL_DRAFT (empty bullets dropped) as the vetted input for M5. Frontend-only; pytest 44/44.
