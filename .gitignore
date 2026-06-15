@@ -12,6 +12,9 @@ venv/
 # User data (keep sample, ignore real)
 backend/data/materials.json
 
+# Bundled LaTeX engine (downloaded locally, ~50MB; not committed)
+backend/tools/
+
 # Build output
 backend/output/
 *.pdf

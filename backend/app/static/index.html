@@ -290,13 +290,16 @@
 
         <div class="card" id="render" style="display:none;">
           <p class="field-title" style="margin:0 0 6px;">Resume document (Step 5)</p>
-          <div class="hint" style="margin-bottom:10px;">Renders your finalized draft into a one-page LaTeX resume in your template's style. Matched JD keywords are set <b>bold</b> for ATS. Install tectonic or pdflatex to also get a compiled PDF (the .tex is always available).</div>
+          <div class="hint" style="margin-bottom:10px;">Renders your finalized draft into a one-page LaTeX resume in your template's style and compiles it to PDF. Matched JD keywords are set <b>bold</b> for ATS.</div>
           <div class="final-bar">
-            <button id="genBtn">Generate resume (.tex)</button>
+            <button id="genBtn">Generate &amp; preview PDF</button>
             <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="hlToggle" checked> bold JD keywords</label>
-            <button class="mini" id="texDownloadBtn" disabled>Download .tex</button>
             <a id="pdfLink" class="mini" href="/render/pdf" target="_blank" rel="noopener" style="display:none;">Download PDF</a>
+            <button class="mini" id="texDownloadBtn" disabled>Download .tex</button>
             <span class="hint" id="render-hint"></span>
+          </div>
+          <div id="pdf-preview" style="display:none; margin-top:12px;">
+            <iframe id="pdf-frame" title="Resume PDF preview" style="width:100%; height:840px; border:1px solid var(--border); border-radius:8px; background:#f4f4f5;"></iframe>
           </div>
           <details class="raw"><summary class="muted">LaTeX source (.tex)</summary><pre id="tex-out"></pre></details>
         </div>
@@ -647,6 +650,7 @@ versions in production is required. Fast-paced startup environment.`;
         if (!r.ok) { $('error').textContent = `Rewrite error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         FINAL_DRAFT = null; $('final-hint').textContent = 'Preview below. Click Edit to revise, then Finalize for the PDF (next step).';
         $('render').style.display = 'none'; $('texDownloadBtn').disabled = true; $('pdfLink').style.display = 'none'; LAST_TEX = ''; $('tex-out').textContent = '';
+        $('pdf-preview').style.display = 'none'; $('pdf-frame').removeAttribute('src');
         RW_VIEW = 'preview'; renderRewrite(data);
         $('rewrite').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (e) { $('error').textContent = 'Request failed: ' + e.message; }
@@ -772,8 +776,16 @@ versions in production is required. Fast-paced startup environment.`;
         const data = await r.json();
         if (!r.ok) { $('render-hint').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         LAST_TEX = data.tex; $('tex-out').textContent = data.tex; $('texDownloadBtn').disabled = false;
-        if (data.pdf_available) { $('pdfLink').style.display = 'inline-block'; $('render-hint').textContent = `Compiled to PDF with ${data.engine}.`; }
-        else { $('pdfLink').style.display = 'none'; $('render-hint').textContent = 'No LaTeX engine found — .tex is ready. Install tectonic for a one-click PDF.'; }
+        if (data.pdf_available) {
+          $('pdfLink').style.display = 'inline-block';
+          const url = '/render/pdf?t=' + Date.now();  // cache-bust so the new PDF shows
+          $('pdfLink').href = url;
+          $('pdf-frame').src = url; $('pdf-preview').style.display = 'block';
+          $('render-hint').textContent = `Compiled to PDF with ${data.engine}. Preview below.`;
+        } else {
+          $('pdfLink').style.display = 'none'; $('pdf-preview').style.display = 'none'; $('pdf-frame').removeAttribute('src');
+          $('render-hint').textContent = 'No LaTeX engine found — .tex is ready, but PDF compile is unavailable.';
+        }
       } catch (e) { $('render-hint').textContent = 'Request failed: ' + e.message; }
       finally { btn.disabled = false; btn.textContent = old; }
     }
