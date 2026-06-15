@@ -166,8 +166,14 @@ def render(req: RenderRequest) -> RenderResult:
 
 @router.get("/render/pdf", include_in_schema=True)
 def render_pdf() -> FileResponse:
-    """Download the most recently compiled resume PDF (if any)."""
+    """Serve the most recently compiled resume PDF, inline so it can preview in an
+    iframe. (The UI's Download link forces a download via the `download` attr.)"""
     pdf = get_settings().output_dir / "resume.pdf"
     if not pdf.exists():
         raise HTTPException(status_code=404, detail="No compiled PDF yet (install tectonic/pdflatex, then re-render).")
-    return FileResponse(pdf, media_type="application/pdf", filename="resume.pdf")
+    return FileResponse(
+        pdf,
+        media_type="application/pdf",
+        content_disposition_type="inline",
+        headers={"Cache-Control": "no-store"},
+    )
