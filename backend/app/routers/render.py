@@ -1,0 +1,162 @@
+"""Router for Step 5: render the finalized resume to LaTeX. `POST /render`.
+
+Takes the finalized rewrite (selected experiences/projects with `rewritten_bullets`)
+plus optional skills, assembles a self-contained `ResumeDocument` by pulling
+education / contact / titles / dates from the saved library, and returns the
+`.tex`. If a LaTeX engine is installed it also compiles a PDF and exposes it at
+`GET /render/pdf`.
+"""
+
+from __future__ import annotations
+
+from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
+
+from ..config import get_settings
+from ..latex_tools import detect_latex_engine
+from ..materials_store import load_materials
+from ..render.compile import try_compile
+from ..render.latex import render_resume
+from ..schemas import (
+    Education,
+    Experience,
+    JDProfile,
+    MaterialsLibrary,
+    Project,
+    RenderBullet,
+    RenderContact,
+    RenderEducation,
+    RenderEntry,
+    ResumeDocument,
+    SelectedExperience,
+)
+
+router = APIRouter(tags=["render"])
+
+
+class RenderRequest(BaseModel):
+    jd_profile: Optional[JDProfile] = None
+    selected_experiences: List[SelectedExperience] = Field(default_factory=list)
+    selected_projects: List[SelectedExperience] = Field(default_factory=list)
+    # The selection's chosen skill names; falls back to all library skills if empty.
+    skills: List[str] = Field(default_factory=list)
+    highlight: bool = True
+    projects_heading: str = "Research Experience"
+
+
+class RenderResult(BaseModel):
+    tex: str
+    pdf_available: bool = False
+    engine: Optional[str] = None
+
+
+def _bullets(group: SelectedExperience) -> List[RenderBullet]:
+    """Prefer the finalized rewrite; fall back to the original selected text."""
+    source = group.rewritten_bullets or group.selected_bullets
+    out: List[RenderBullet] = []
+    for b in source:
+        text = (b.rewritten_text or b.original_text or "").strip()
+        if text:
+            out.append(RenderBullet(text=text, keywords=b.matched_keywords))
+    return out
+
+
+def _date_range(start: str, end: str) -> str:
+    # LaTeX "--" renders an en-dash; ASCII-safe across engines/encodings.
+    parts = [p for p in (start.strip(), end.strip()) if p]
+    return " -- ".join(parts)
+
+
+def _degree_line(ed: Education) -> str:
+    degree, major = ed.degree.strip(), ed.major.strip()
+    if major and major.lower() not in degree.lower():
+        return f"{degree} in {major}" if degree else major
+    return degree
+
+
+def _experience_entry(group: SelectedExperience, exp: Optional[Experience]) -> RenderEntry:
+    return RenderEntry(
+        organization=exp.organization if exp else "",
+        title=exp.title if exp else group.source_id,
+        location=exp.location if exp else "",
+        date_range=_date_range(exp.start_date, exp.end_date) if exp else "",
+        bullets=_bullets(group),
+    )
+
+
+def _project_entry(group: SelectedExperience, proj: Optional[Project]) -> RenderEntry:
+    return RenderEntry(
+        title=proj.title if proj else group.source_id,
+        bullets=_bullets(group),
+    )
+
+
+def _build_document(req: RenderRequest, lib: MaterialsLibrary) -> ResumeDocument:
+    exp_by_id = {e.id: e for e in lib.experiences}
+    proj_by_id = {p.id: p for p in lib.projects}
+
+    contact = RenderContact(
+        name=lib.personal_info.name,
+        email=lib.personal_info.email,
+        phone=lib.personal_info.phone,
+        links=lib.personal_info.links,
+    )
+    education = [
+        RenderEducation(
+            school=ed.school,
+            degree_line=_degree_line(ed),
+            date=ed.end_date or ed.start_date,
+            details=ed.details,
+        )
+        for ed in lib.education
+    ]
+    skills = req.skills or [s.name for s in lib.skills]
+
+    experiences = [
+        _experience_entry(g, exp_by_id.get(g.source_id)) for g in req.selected_experiences
+    ]
+    projects = [
+        _project_entry(g, proj_by_id.get(g.source_id)) for g in req.selected_projects
+    ]
+
+    return ResumeDocument(
+        contact=contact,
+        education=education,
+        skills=skills,
+        experiences=experiences,
+        projects=projects,
+        projects_heading=req.projects_heading,
+        highlight=req.highlight,
+    )
+
+
+@router.post("/render", response_model=RenderResult)
+def render(req: RenderRequest) -> RenderResult:
+    try:
+        lib = load_materials()
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Could not load library: {e}")
+
+    doc = _build_document(req, lib)
+    tex = render_resume(doc)
+
+    settings = get_settings()
+    engine = detect_latex_engine()
+    pdf_path = try_compile(tex, settings.output_dir, stem="resume") if engine else None
+    return RenderResult(
+        tex=tex,
+        pdf_available=pdf_path is not None,
+        engine=engine.name if engine else None,
+    )
+
+
+@router.get("/render/pdf", include_in_schema=True)
+def render_pdf() -> FileResponse:
+    """Download the most recently compiled resume PDF (if any)."""
+    pdf = get_settings().output_dir / "resume.pdf"
+    if not pdf.exists():
+        raise HTTPException(status_code=404, detail="No compiled PDF yet (install tectonic/pdflatex, then re-render).")
+    return FileResponse(pdf, media_type="application/pdf", filename="resume.pdf")

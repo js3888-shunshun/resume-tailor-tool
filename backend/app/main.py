@@ -16,6 +16,7 @@ from .config import get_settings
 from .latex_tools import INSTALL_HINT, detect_latex_engine
 from .routers import jd as jd_router
 from .routers import materials as materials_router
+from .routers import render as render_router
 from .routers import rewrite as rewrite_router
 from .routers import selection as selection_router
 
@@ -29,6 +30,7 @@ app.include_router(jd_router.router)
 app.include_router(selection_router.router)
 app.include_router(materials_router.router)
 app.include_router(rewrite_router.router)
+app.include_router(render_router.router)
 
 
 @app.get("/", include_in_schema=False)

@@ -12,6 +12,13 @@ from .materials import (
 )
 from .jd import JDProfile
 from .selection import SelectedBullet, SelectedExperience, SelectionResult
+from .render import (
+    RenderBullet,
+    RenderContact,
+    RenderEducation,
+    RenderEntry,
+    ResumeDocument,
+)
 
 __all__ = [
     "Bullet",
@@ -26,4 +33,9 @@ __all__ = [
     "SelectedBullet",
     "SelectedExperience",
     "SelectionResult",
+    "RenderBullet",
+    "RenderContact",
+    "RenderEducation",
+    "RenderEntry",
+    "ResumeDocument",
 ]

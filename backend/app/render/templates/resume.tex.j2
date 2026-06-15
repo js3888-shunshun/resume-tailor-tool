@@ -1,0 +1,76 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+% Highlight for matched JD keywords (ATS emphasis). Swap to a color if desired.
+\newcommand{\hlkw}[1]{\textbf{#1}}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+\titleformat{\section}{\large\bfseries\uppercase}{}{0pt}{}[\titlerule]
+\titlespacing{\section}{0pt}{10pt}{5pt}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE \textbf{\VAR{doc.contact.name | latex}}} \\
+    \vspace{4pt}
+    \VAR{contact_line}
+\end{center}
+
+\BLOCK{if doc.education}
+\section{Education}
+\BLOCK{for ed in doc.education}
+\textbf{\VAR{ed.school | latex}} \hfill \VAR{ed.location | latex} \\
+\textit{\VAR{ed.degree_line | latex}} \hfill \VAR{ed.date | latex}
+\BLOCK{if ed.details}
+\begin{itemize}[leftmargin=15pt, label=$\bullet$]
+\BLOCK{for d in ed.details}
+    \item \VAR{d | latex}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if doc.skills}
+\section{Technical Skills}
+\VAR{skills_line}
+\BLOCK{endif}
+
+\BLOCK{if doc.experiences}
+\section{Professional Experience}
+\BLOCK{for x in doc.experiences}
+\VAR{x | entry_head}
+\BLOCK{if x.bullets}
+\begin{itemize}[leftmargin=15pt, label=$\bullet$]
+\BLOCK{for b in x.bullets}
+    \item \VAR{b | bullet}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if doc.projects}
+\section{\VAR{doc.projects_heading | latex}}
+\BLOCK{for x in doc.projects}
+\VAR{x | entry_head}
+\BLOCK{if x.bullets}
+\begin{itemize}[leftmargin=15pt, label=$\bullet$]
+\BLOCK{for b in x.bullets}
+    \item \VAR{b | bullet}
+\BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\end{document}

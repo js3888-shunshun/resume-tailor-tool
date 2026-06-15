@@ -283,6 +283,19 @@
           </div>
           <details class="raw"><summary class="muted">Raw JSON (current draft)</summary><pre id="rw-raw"></pre></details>
         </div>
+
+        <div class="card" id="render" style="display:none;">
+          <p class="field-title" style="margin:0 0 6px;">Resume document (Step 5)</p>
+          <div class="hint" style="margin-bottom:10px;">Renders your finalized draft into a one-page LaTeX resume in your template's style. Matched JD keywords are set <b>bold</b> for ATS. Install tectonic or pdflatex to also get a compiled PDF (the .tex is always available).</div>
+          <div class="final-bar">
+            <button id="genBtn">Generate resume (.tex)</button>
+            <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="hlToggle" checked> bold JD keywords</label>
+            <button class="mini" id="texDownloadBtn" disabled>Download .tex</button>
+            <a id="pdfLink" class="mini" href="/render/pdf" target="_blank" rel="noopener" style="display:none;">Download PDF</a>
+            <span class="hint" id="render-hint"></span>
+          </div>
+          <details class="raw"><summary class="muted">LaTeX source (.tex)</summary><pre id="tex-out"></pre></details>
+        </div>
       </section>
     </main>
   </div>
@@ -627,6 +640,7 @@ versions in production is required. Fast-paced startup environment.`;
         const data = await r.json();
         if (!r.ok) { $('error').textContent = `Rewrite error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         FINAL_DRAFT = null; $('final-hint').textContent = 'Preview below. Click Edit to revise, then Finalize for the PDF (next step).';
+        $('render').style.display = 'none'; $('texDownloadBtn').disabled = true; $('pdfLink').style.display = 'none'; LAST_TEX = ''; $('tex-out').textContent = '';
         RW_VIEW = 'preview'; renderRewrite(data);
         $('rewrite').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (e) { $('error').textContent = 'Request failed: ' + e.message; }
@@ -697,7 +711,38 @@ versions in production is required. Fast-paced startup environment.`;
       FINAL_DRAFT = JSON.parse(JSON.stringify(REWRITE_DRAFT));
       const n = [...(FINAL_DRAFT.selected_experiences || []), ...(FINAL_DRAFT.selected_projects || [])]
         .reduce((s, g) => s + (g.rewritten_bullets || []).length, 0);
-      $('final-hint').textContent = `Draft finalized — ${n} bullets ready for PDF generation (next step).`;
+      $('final-hint').textContent = `Draft finalized — ${n} bullets ready. Generate the resume below.`;
+      $('render').style.display = 'block';
+      $('render-hint').textContent = 'Draft updated — click Generate to (re)render.';
+    }
+
+    let LAST_TEX = '';
+    async function generateResume() {
+      if (!FINAL_DRAFT) { $('render-hint').textContent = 'Finalize the draft first.'; return; }
+      const btn = $('genBtn'); btn.disabled = true; const old = btn.textContent;
+      btn.innerHTML = '<span class="spinner"></span> Rendering…';
+      try {
+        const body = {
+          selected_experiences: FINAL_DRAFT.selected_experiences || [],
+          selected_projects: FINAL_DRAFT.selected_projects || [],
+          skills: (WORKING && WORKING.skills) || [],
+          highlight: $('hlToggle').checked,
+          projects_heading: 'Research Experience',
+        };
+        const r = await fetch('/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await r.json();
+        if (!r.ok) { $('render-hint').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
+        LAST_TEX = data.tex; $('tex-out').textContent = data.tex; $('texDownloadBtn').disabled = false;
+        if (data.pdf_available) { $('pdfLink').style.display = 'inline-block'; $('render-hint').textContent = `Compiled to PDF with ${data.engine}.`; }
+        else { $('pdfLink').style.display = 'none'; $('render-hint').textContent = 'No LaTeX engine found — .tex is ready. Install tectonic for a one-click PDF.'; }
+      } catch (e) { $('render-hint').textContent = 'Request failed: ' + e.message; }
+      finally { btn.disabled = false; btn.textContent = old; }
+    }
+    function downloadTex() {
+      if (!LAST_TEX) return;
+      const blob = new Blob([LAST_TEX], { type: 'application/x-tex' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'resume.tex'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
     }
     async function analyze() {
       const jd = $('jd').value.trim(); $('error').textContent = '';
@@ -726,6 +771,8 @@ versions in production is required. Fast-paced startup environment.`;
     $('analyzeBtn').addEventListener('click', analyze);
     $('polishBtn').addEventListener('click', polish);
     $('finalizeBtn').addEventListener('click', finalizeDraft);
+    $('genBtn').addEventListener('click', generateResume);
+    $('texDownloadBtn').addEventListener('click', downloadTex);
     $('rwToggleBtn').addEventListener('click', () => { if (!REWRITE_DRAFT) return; RW_VIEW = RW_VIEW === 'edit' ? 'preview' : 'edit'; renderRewrite(REWRITE_DRAFT); });
     $('sampleBtn').addEventListener('click', () => { $('jd').value = SAMPLE_JD; });
     (async () => { const health = await refreshStatus(); await loadMaterialsMap(); await loadExistingLibrary(health); })();

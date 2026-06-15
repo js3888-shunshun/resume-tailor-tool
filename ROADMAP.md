@@ -164,16 +164,34 @@ selection, on the user's finalized (manually adjustable) working set.
   Edit/Preview toggle switches to per-bullet editing where textareas auto-grow to
   fit all text (no inner scroll), with per-bullet delete and add. Frontend-only.
 
-### M5 — LaTeX template + rendering (Step 5)  ⬅️ Next
+### M5 — LaTeX template + rendering (Step 5)  ✅ Done
 **Goal:** Rewrite result → `.tex` file (page count not yet handled).
-- [ ] `resume.tex.j2` template (based on the user's existing resume style)
-- [ ] Jinja2 env + custom LaTeX-escape filter (`& % _ # $`, etc.)
-- [ ] Keyword highlight: define `\hlkw` in preamble, wrap matched_keywords
-- [ ] Output `.tex` to a temp directory
-- **Acceptance:** Renders valid `.tex`; bullets with special chars don't break
-  compilation; if LaTeX is installed, produces a PDF.
-- **⚠️ Dependency:** Need tectonic (recommended, single binary) or pdflatex;
-  need the user's existing resume `.tex` as the template blueprint.
+- [x] `render/templates/resume.tex.j2` — built from the user's own resume `.tex`
+  (same preamble: 10pt a4, 0.5in margin, titlesec uppercase sections, enumitem).
+- [x] Jinja2 env with LaTeX-safe delimiters (`\VAR{}`, `\BLOCK{}`) + single-pass
+  `latex_escape` filter (`& % $ # _ { } ~ ^ \`) so specials never re-escape.
+- [x] Keyword highlight: `\newcommand{\hlkw}` (bold) in preamble; `render_bullet`
+  escapes then word-boundary, case-insensitive wraps matched_keywords (longest
+  first, never double-wraps).
+- [x] Pure renderer over a self-contained `ResumeDocument` (schemas/render.py);
+  `/render` router assembles it from (library + finalized rewrite). Omits empty
+  segments (blank location/dates/sections) so nothing dangles.
+- [x] `render/compile.py` — best-effort tectonic/pdflatex compile (ready for when
+  an engine is installed); `POST /render` returns `.tex` always + compiles a PDF
+  if an engine is present; `GET /render/pdf` downloads it.
+- [x] UI: "Resume document (Step 5)" card after Finalize — Generate, bold-keywords
+  toggle, Download .tex, Download PDF (when compiled), live .tex source.
+- **Acceptance:** ✅ Renderer pure-function tested (escape order, keyword highlight
+  boundary/overlap/escape-then-highlight, balanced braces, omitted sections,
+  skills escaping). pytest 55/55. Live `/render` on the real "Joy Sun" library →
+  valid one-page `.tex`, balanced braces, `\hlkw` on JD keywords, `%`/`&`/`$`/`_`
+  escaped; `pdf_available:false` (no engine yet, as expected).
+- **⚠️ Dependency (PDF only):** install tectonic (`winget install
+  TectonicProject.Tectonic`) or pdflatex to turn the `.tex` into a PDF in-app.
+- **Schema-gap follow-ups (M6/M8):** `PersonalInfo` has no `location`;
+  `Education` has no `location`/`gpa` (decompose currently parks GPA & city in
+  `details`); `Project` has no `organization`/`date`. Add these fields + update
+  the decompose prompt so the rendered resume regains those header pieces.
 
 ### M6 — Compile + one-page check loop (Step 6, core agent loop)
 **Goal:** `.tex` → compile → check page count → compress & retry if too long,
@@ -210,6 +228,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-15 — M5 — ✅ Done. LaTeX rendering (Step 5): `resume.tex.j2` modeled on the user's own resume; Jinja2 env with `\VAR{}`/`\BLOCK{}` delimiters + single-pass `latex_escape`; `\hlkw` bold keyword highlight (`render_bullet`, word-boundary/longest-first/no double-wrap); pure renderer over a self-contained `ResumeDocument`; `/render` assembles it from library + finalized rewrite (omits blank segments), best-effort tectonic/pdflatex compile, `GET /render/pdf`. UI: "Resume document" card (Generate, keyword toggle, Download .tex/PDF). pytest 55/55; live render on real library produced a valid one-page .tex with balanced braces and escaped specials (`pdf_available:false` — no engine installed yet). Logged schema gaps (location/gpa/project meta) for M6/M8.
 - 2026-06-14 — M4-rev4 — ✅ Done. Polished-result panel got a preview/edit toggle: clean read-only preview by default; Edit mode gives per-bullet auto-growing textareas (full text visible, no inner scroll) with delete/add. Frontend-only; pytest 44/44.
 - 2026-06-14 — M4-rev3 — ✅ Done. Made the "after" column editable (per-bullet textarea, add/remove) backed by client-side REWRITE_DRAFT; "Finalize draft" snapshots FINAL_DRAFT (empty bullets dropped) as the vetted input for M5. Frontend-only; pytest 44/44.
 - 2026-06-14 — M4-rev2 — ✅ Done (per user feedback). Rewrite now ENRICHES (4-6 bullets, expand detail) with opt-in realistic embellishment (plausible figures/details on the real experience); UI flags "review for accuracy". `/select` returns ALL experiences in ranked_* (no category filter) so any can be manually added; auto-select still score>0. pytest 44/44; verified 1 bullet → 6 enriched, all 5 experiences addable.
@@ -239,5 +258,5 @@ milestone is the final integration + polish, not the first frontend.)
 ## Current blockers / awaiting user
 - [x] Set `ANTHROPIC_API_KEY` (needed from M2) — configured, real call verified
 - [x] GitHub remote — connected `js3888-shunshun/resume-tailor-tool`, branch main
-- [ ] Install tectonic or pdflatex (needed from M5)
-- [ ] Provide the existing resume `.tex` source as the resume-template blueprint (needed for M5)
+- [x] Provide the existing resume `.tex` source as the resume-template blueprint — received; `resume.tex.j2` modeled on it (M5)
+- [ ] Install tectonic or pdflatex — `.tex` renders without it; needed only to compile the PDF in-app (`winget install TectonicProject.Tectonic`)
