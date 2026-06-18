@@ -165,7 +165,7 @@ def test_render_education_date_and_spaced_gpa():
         gpa="3.9/4.0", date="May 2026")]))
     # School row carries the date (location dropped); GPA spaced after the major.
     assert r"\textbf{Cornell} \hfill May 2026" in tex
-    assert r"\textit{MEng in DS}\hspace{2em}GPA: 3.9/4.0" in tex
+    assert r"\textit{MEng in DS} | GPA: 3.9/4.0" in tex
     assert "New York, NY" not in tex  # education location no longer rendered
 
 

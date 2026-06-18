@@ -33,7 +33,7 @@
 \section{Education}
 \BLOCK{for ed in doc.education}
 \textbf{\VAR{ed.school | latex}} \hfill \VAR{ed.date | latex} \\
-\textit{\VAR{ed.degree_line | latex}}\BLOCK{if ed.gpa}\hspace{2em}GPA: \VAR{ed.gpa | latex}\BLOCK{endif}
+\textit{\VAR{ed.degree_line | latex}}\BLOCK{if ed.gpa} | GPA: \VAR{ed.gpa | latex}\BLOCK{endif}
 \BLOCK{if ed.details}
 \begin{itemize}
 \BLOCK{for d in ed.details}
