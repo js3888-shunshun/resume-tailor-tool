@@ -15,7 +15,8 @@ echo Starting AI Resume Tailor at http://127.0.0.1:8000/
 echo Keep this window open while you use the app. Close it to stop the server.
 echo.
 
-REM --reload picks up code/template edits without a manual restart.
-"..\.venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --reload-include "*.j2"
+REM No --reload: it spawns a watcher + worker that can orphan and hold port 8000.
+REM After a code change, just close this window and double-click start.bat again.
+"..\.venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 pause

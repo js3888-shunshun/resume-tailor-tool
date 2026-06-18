@@ -43,8 +43,14 @@ def compile_tex(tex: str, out_dir: Path, stem: str = "resume") -> Path:
 
         log = ""
         for cmd in cmds:
-            proc = subprocess.run(cmd, capture_output=True, text=True, cwd=str(tmp_path))
-            log += proc.stdout + proc.stderr
+            # Force UTF-8 decoding: tectonic/pdflatex emit UTF-8, but Python would
+            # otherwise use the OS default (GBK on a Chinese Windows), which throws
+            # UnicodeDecodeError and leaves stdout/stderr as None.
+            proc = subprocess.run(
+                cmd, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", cwd=str(tmp_path),
+            )
+            log += (proc.stdout or "") + (proc.stderr or "")
 
         pdf = tmp_path / f"{stem}.pdf"
         if not pdf.exists():
@@ -56,8 +62,12 @@ def compile_tex(tex: str, out_dir: Path, stem: str = "resume") -> Path:
 
 
 def try_compile(tex: str, out_dir: Path, stem: str = "resume") -> Optional[Path]:
-    """Best-effort compile: return the PDF path, or None if no engine / failure."""
+    """Best-effort compile: return the PDF path, or None on any failure.
+
+    Catches broadly on purpose — a compile hiccup must degrade `/render` to
+    "tex only", never 500 the endpoint.
+    """
     try:
         return compile_tex(tex, out_dir, stem=stem)
-    except CompileError:
+    except Exception:  # noqa: BLE001 - best-effort; the .tex is still returned
         return None
