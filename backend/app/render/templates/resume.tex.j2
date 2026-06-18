@@ -14,8 +14,12 @@
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0pt}
 
+% Tight bullet lists: no extra space between items or around the list, so bullet
+% spacing matches normal line spacing.
+\setlist[itemize]{leftmargin=15pt, label=$\bullet$, topsep=1pt, itemsep=0pt, parsep=0pt, partopsep=0pt}
+
 \titleformat{\section}{\large\bfseries\uppercase}{}{0pt}{}[\titlerule]
-\titlespacing{\section}{0pt}{10pt}{5pt}
+\titlespacing{\section}{0pt}{4pt}{2pt}
 
 \begin{document}
 
@@ -28,10 +32,10 @@
 \BLOCK{if doc.education}
 \section{Education}
 \BLOCK{for ed in doc.education}
-\textbf{\VAR{ed.school | latex}} \hfill \VAR{ed.location | latex} \\
-\textit{\VAR{ed.degree_line | latex}} \hfill \VAR{ed.date | latex}
+\textbf{\VAR{ed.school | latex}} \hfill \VAR{ed.date | latex} \\
+\textit{\VAR{ed.degree_line | latex}}\BLOCK{if ed.gpa}\hspace{2em}GPA: \VAR{ed.gpa | latex}\BLOCK{endif}
 \BLOCK{if ed.details}
-\begin{itemize}[leftmargin=15pt, label=$\bullet$]
+\begin{itemize}
 \BLOCK{for d in ed.details}
     \item \VAR{d | latex}
 \BLOCK{endfor}
@@ -50,7 +54,7 @@
 \BLOCK{for x in doc.experiences}
 \VAR{x | entry_head}
 \BLOCK{if x.bullets}
-\begin{itemize}[leftmargin=15pt, label=$\bullet$]
+\begin{itemize}
 \BLOCK{for b in x.bullets}
     \item \VAR{b | bullet}
 \BLOCK{endfor}
@@ -64,7 +68,7 @@
 \BLOCK{for x in doc.projects}
 \VAR{x | entry_head}
 \BLOCK{if x.bullets}
-\begin{itemize}[leftmargin=15pt, label=$\bullet$]
+\begin{itemize}
 \BLOCK{for b in x.bullets}
     \item \VAR{b | bullet}
 \BLOCK{endfor}

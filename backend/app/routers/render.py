@@ -76,10 +76,7 @@ def _date_range(start: str, end: str) -> str:
 
 def _degree_line(ed: Education) -> str:
     degree, major = ed.degree.strip(), ed.major.strip()
-    line = f"{degree} in {major}" if (major and major.lower() not in degree.lower() and degree) else (degree or major)
-    if ed.gpa.strip():
-        line = f"{line}, GPA: {ed.gpa.strip()}" if line else f"GPA: {ed.gpa.strip()}"
-    return line
+    return f"{degree} in {major}" if (major and major.lower() not in degree.lower() and degree) else (degree or major)
 
 
 def _experience_entry(group: SelectedExperience, exp: Optional[Experience]) -> RenderEntry:
@@ -118,6 +115,7 @@ def _build_document(req: RenderRequest, lib: MaterialsLibrary) -> ResumeDocument
             school=ed.school,
             location=ed.location,
             degree_line=_degree_line(ed),
+            gpa=ed.gpa.strip(),
             date=ed.end_date or ed.start_date,
             details=ed.details,
         )

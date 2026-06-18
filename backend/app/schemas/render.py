@@ -24,8 +24,10 @@ class RenderContact(BaseModel):
 class RenderEducation(BaseModel):
     school: str
     location: str = ""
-    # e.g. "MEng in Data Science and Decision Analytics, GPA: 3.9/4.0"
+    # e.g. "MEng in Data Science and Decision Analytics" (GPA kept separate so the
+    # template can space it from the major rather than comma-joining).
     degree_line: str = ""
+    gpa: str = ""  # e.g. "3.9/4.0" — rendered on the same line as the major
     date: str = ""  # e.g. "May 2026"
     details: List[str] = Field(default_factory=list)
 

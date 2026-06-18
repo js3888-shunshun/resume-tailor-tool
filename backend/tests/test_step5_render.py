@@ -129,15 +129,17 @@ def test_render_skills_line_escaped():
 
 # ---- JD-tailored grouped skills + new header fields ----------------------
 
-def test_render_grouped_skills_two_up():
+def test_render_grouped_skills_one_per_line():
     tex = render_resume(_doc(skill_groups=[
         SkillGroup(label="Programming", skills=["Python", "SQL"]),
         SkillGroup(label="ML & Data", skills=["PyTorch"]),
         SkillGroup(label="Tools", skills=["Git"]),
     ]))
-    # Labels bold, skills listed, first two groups share a row via \hfill.
-    assert r"\textbf{Programming:} Python, SQL \hfill \textbf{ML \& Data:} PyTorch" in tex
+    # Labels bold, skills listed, each group on its own row (no \hfill pairing).
+    assert r"\textbf{Programming:} Python, SQL" in tex
+    assert r"\textbf{ML \& Data:} PyTorch" in tex
     assert r"\textbf{Tools:} Git" in tex
+    assert r"\hfill \textbf{" not in tex  # groups are not paired two-up
     # Balanced braces survive the grouped layout.
     assert tex.count("{") == tex.count("}")
 
@@ -157,12 +159,14 @@ def test_render_project_heading_title_first():
     assert r"\textit{Text-to-SQL}" not in tex
 
 
-def test_render_education_location_and_gpa():
+def test_render_education_date_and_spaced_gpa():
     tex = render_resume(_doc(education=[RenderEducation(
-        school="Cornell", location="New York, NY", degree_line="MEng in DS, GPA: 3.9/4.0",
-        date="May 2026")]))
-    assert r"\textbf{Cornell} \hfill New York, NY" in tex
-    assert "GPA: 3.9/4.0" in tex
+        school="Cornell", location="New York, NY", degree_line="MEng in DS",
+        gpa="3.9/4.0", date="May 2026")]))
+    # School row carries the date (location dropped); GPA spaced after the major.
+    assert r"\textbf{Cornell} \hfill May 2026" in tex
+    assert r"\textit{MEng in DS}\hspace{2em}GPA: 3.9/4.0" in tex
+    assert "New York, NY" not in tex  # education location no longer rendered
 
 
 def test_render_contact_location():

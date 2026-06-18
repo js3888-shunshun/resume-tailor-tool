@@ -120,18 +120,17 @@ def _skills_line(skills: Iterable[str]) -> str:
 def _skills_block(doc: ResumeDocument) -> str:
     """The body of the Technical Skills section.
 
-    With JD-tailored `skill_groups`, render labeled groups two-up per row
-    (\\textbf{label:} a, b \\hfill \\textbf{label:} c, d), mirroring the user's
-    resume. Otherwise fall back to a single flat comma list.
+    With JD-tailored `skill_groups`, render one labeled group per line
+    (\\textbf{label:} a, b, c), so each category stands on its own row.
+    Otherwise fall back to a single flat comma list.
     """
     groups = [g for g in doc.skill_groups if g.label.strip() and g.skills]
     if not groups:
         return _skills_line(doc.skills)
-    cells = [
+    rows = [
         r"\textbf{%s:} %s" % (latex_escape(g.label), _skills_line(g.skills))
         for g in groups
     ]
-    rows = [r" \hfill ".join(cells[i:i + 2]) for i in range(0, len(cells), 2)]
     return " \\\\\n    ".join(rows)
 
 
