@@ -48,10 +48,23 @@ def latex_escape(value) -> str:
     return _ESCAPE_RE.sub(lambda m: _ESCAPES[m.group(0)], text)
 
 
+# Numbers / metrics to bold automatically, matched on the ALREADY-ESCAPED text
+# (so `$` is `\$` and `%` is `\%`). Catches 30\%, \$1M, 12x, 1,000, 3.9, 2.5K, etc.
+# A leading/trailing alphanumeric guard keeps it from firing inside tokens like
+# "S3", "EC2", or "h5".
+_NUMBER_RE = re.compile(
+    r"(?<![A-Za-z0-9])"
+    r"(?:\\\$)?"               # optional escaped dollar sign
+    r"\d[\d,]*(?:\.\d+)?"      # digits with thousands separators / decimals
+    r"(?:\\%|x|[KMB])?"        # optional unit: %, x, K/M/B
+    r"(?![A-Za-z0-9])"
+)
+
+
 def render_bullet(bullet: RenderBullet, highlight: bool = True) -> str:
-    """Escape a bullet, then bold its matched JD keywords via \\hlkw."""
+    """Escape a bullet, then bold its matched keywords/methods and numbers via \\hlkw."""
     escaped = latex_escape(bullet.text)
-    if not highlight or not bullet.keywords:
+    if not highlight:
         return escaped
     # Longest keywords first so e.g. "machine learning" wins over "learning".
     for kw in sorted({k for k in bullet.keywords if k.strip()}, key=len, reverse=True):
@@ -63,6 +76,8 @@ def render_bullet(bullet: RenderBullet, highlight: bool = True) -> str:
             re.IGNORECASE,
         )
         escaped = _sub_outside_hlkw(pattern, escaped)
+    # Bold standalone numbers / metrics last, skipping any already inside \hlkw{}.
+    escaped = _sub_outside_hlkw(_NUMBER_RE, escaped)
     return escaped
 
 

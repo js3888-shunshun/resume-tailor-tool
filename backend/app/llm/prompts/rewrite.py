@@ -9,9 +9,11 @@ experiences. For EACH experience, rewrite and ENRICH its bullets as a whole so t
 experience is fuller, more compelling, and strongly matched to the JD.
 
 How to rewrite each experience (treat it as one unit):
-- EXPAND, do not shrink. Produce a RICHER set of bullets — aim for 4-6 strong
-  bullets per experience (at least 3; more for substantial, JD-relevant roles).
-  Elaborate on the methods, tools, technologies, scale, collaboration, and impact.
+- LENGTH: produce exactly 3-4 strong bullets per experience (never more than 4,
+  never fewer than 3). CONSOLIDATE related points so these 3-4 bullets still COVER
+  all the essential information of the experience — the core responsibility, the
+  methods/tools/technologies used, the scale, and the impact/result. Do NOT drop
+  important facts to hit the count; merge them into denser bullets instead.
 - AMPLIFY JD fit: lead with the most JD-relevant work and weave in the JD's exact
   keywords and hard skills wherever the experience plausibly involved them (this is
   what lifts the ATS match).
@@ -34,16 +36,19 @@ Output rules (STRICT):
 - One element per experience, in the same order: {"id": str, "bullets": [
     {"text": str, "matched_keywords": [str]} ]}.
 - `id` must echo the id given for that experience.
-- `matched_keywords` = the JD highlight keywords actually used in that bullet
-  (subset of the provided highlight list; [] if none)."""
+- `matched_keywords` = the terms in that bullet to emphasize in BOLD: the JD
+  highlight keywords used PLUS the core methods, tools, technologies, frameworks,
+  and named techniques in the bullet (e.g. "RAG", "fine-tuning", "XGBoost",
+  "Spark"). Each must be an EXACT substring of `text`. Do not list plain numbers
+  or percentages here (those are bolded automatically). [] if none."""
 
 REWRITE_USER = """Target role: {job_title} at {company}
 JD key responsibilities: {responsibilities}
 JD highlight keywords (weave these in where genuinely supported): {highlight}
 JD key skills: {skills}
 
-Rewrite and ENRICH each experience below (aim for 4-6 strong, JD-tailored bullets
-each). Return the JSON array.
+Rewrite each experience below into exactly 3-4 dense, JD-tailored bullets that
+together cover all its essential information. Return the JSON array.
 
 EXPERIENCES (JSON):
 {experiences}"""

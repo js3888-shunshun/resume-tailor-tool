@@ -55,8 +55,26 @@ def test_render_bullet_no_double_wrap_when_keyword_repeats_overlap():
 
 
 def test_render_bullet_highlight_off():
-    b = RenderBullet(text="Built RAG", keywords=["RAG"])
-    assert render_bullet(b, highlight=False) == "Built RAG"
+    b = RenderBullet(text="Built RAG, cut latency 30%", keywords=["RAG"])
+    # highlight=False bolds nothing — not keywords, not numbers.
+    assert render_bullet(b, highlight=False) == r"Built RAG, cut latency 30\%"
+
+
+def test_render_bullet_bolds_numbers_and_metrics():
+    b = RenderBullet(text="Cut latency 30% and cost $1.2M, served 12x at 1,000 QPS", keywords=[])
+    out = render_bullet(b)
+    assert r"\hlkw{30\%}" in out
+    assert r"\hlkw{\$1.2M}" in out
+    assert r"\hlkw{12x}" in out
+    assert r"\hlkw{1,000}" in out
+
+
+def test_render_bullet_number_inside_keyword_not_double_wrapped():
+    # A keyword containing digits (S3) must not get its number re-bolded.
+    b = RenderBullet(text="Stored data in S3 buckets", keywords=["S3"])
+    out = render_bullet(b)
+    assert r"\hlkw{S3}" in out
+    assert out.count(r"\hlkw{") == 1
 
 
 def test_render_bullet_escapes_then_highlights():
@@ -111,7 +129,8 @@ def test_render_balanced_braces():
     ]))
     assert tex.count("{") == tex.count("}")
     assert r"Acme \& Co" in tex
-    assert r"30\%" in tex and r"\$1M\_budget" in tex
+    # Metrics are auto-bolded; escaping survives inside the \hlkw wrap.
+    assert r"\hlkw{30\%}" in tex and r"\hlkw{\$1M}" in tex and r"\_budget" in tex
 
 
 def test_render_omits_empty_sections():
