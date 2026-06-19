@@ -123,7 +123,8 @@ def _contact_line(doc: ResumeDocument) -> str:
         parts.append("Email: " + latex_escape(doc.contact.email))
     if doc.contact.phone:
         parts.append("Tel: " + latex_escape(doc.contact.phone))
-    if doc.contact.location:
+    # The current-address line below covers the city, so don't repeat `location`.
+    if doc.contact.location and not doc.contact.current_address:
         parts.append(latex_escape(doc.contact.location))
     parts.extend(latex_escape(link) for link in doc.contact.links if link)
     return " | ".join(parts)

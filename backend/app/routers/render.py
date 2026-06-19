@@ -116,6 +116,7 @@ def _build_document(req: RenderRequest, lib: MaterialsLibrary) -> ResumeDocument
         email=lib.personal_info.email,
         phone=lib.personal_info.phone,
         location=lib.personal_info.location,
+        current_address=lib.personal_info.current_address,
         links=lib.personal_info.links,
     )
     education = [

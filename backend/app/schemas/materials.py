@@ -28,6 +28,8 @@ class PersonalInfo(BaseModel):
     email: str
     phone: str
     location: str = ""
+    # Current address, shown on its own line under the resume contact info.
+    current_address: str = ""
     links: List[str] = Field(default_factory=list)
 
 

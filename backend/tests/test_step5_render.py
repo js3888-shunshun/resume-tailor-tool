@@ -191,3 +191,13 @@ def test_render_education_date_and_spaced_gpa():
 def test_render_contact_location():
     tex = render_resume(_doc(contact=RenderContact(name="J", email="j@x.com", location="NYC")))
     assert "Email: j@x.com | NYC" in tex
+
+
+def test_render_current_address_line():
+    tex = render_resume(_doc(contact=RenderContact(
+        name="J", email="j@x.com", location="NYC",
+        current_address="New York, NY, 10044")))
+    # Address renders on its own line; the bare `location` is dropped to avoid dupes.
+    assert "New York, NY, 10044" in tex
+    assert "Email: j@x.com" in tex and "| NYC" not in tex
+    assert tex.count("{") == tex.count("}")
