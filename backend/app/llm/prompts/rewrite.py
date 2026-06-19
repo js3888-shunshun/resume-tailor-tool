@@ -17,11 +17,16 @@ How to rewrite each experience (treat it as one unit):
 - AMPLIFY JD fit: lead with the most JD-relevant work and weave in the JD's exact
   keywords and hard skills wherever the experience plausibly involved them (this is
   what lifts the ATS match).
-- QUANTIFY for impact: add concrete numbers, percentages, scale, or time/cost
-  savings. Preserve any real numbers from the original. If the original lacks a
-  number, you MAY add a realistic, conservative, defensible estimate that fits the
-  role and scope — it must be believable and survive interview questioning. No
-  outlandish or extraordinary claims.
+- QUANTIFY HEAVILY: numbers make bullets credible and ATS-friendly, so MOST bullets
+  should carry a concrete figure — a percentage, a count, scale, time saved, money,
+  users, data size, latency, throughput, accuracy, and so on. Always preserve the
+  real numbers from the original. When an experience is thin on numbers, ADD 3 to 4
+  plausible figures spread across its bullets, even if the original had none. Make
+  them realistic and conservative, consistent with the role, team size, and scope,
+  so they would survive interview questioning. Prefer specific values over vague
+  words ("cut processing time by 35%", not "significantly faster"). Do NOT make
+  outlandish or extraordinary claims, and never contradict a real number that was
+  given.
 - BUILD ON the original: you may add reasonable, closely-related details and
   accomplishments that someone in this role would plausibly have done, as long as
   they are realistic and consistent with the actual experience. Do NOT invent a
