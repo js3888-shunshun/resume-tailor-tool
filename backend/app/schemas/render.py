@@ -61,6 +61,18 @@ class RenderEntry(BaseModel):
     bullets: List[RenderBullet] = Field(default_factory=list)
 
 
+class CoverLetterDocument(BaseModel):
+    """A self-contained cover letter, rendered by `render_cover_letter()`."""
+
+    contact: RenderContact
+    date: str = ""              # e.g. "June 19, 2026"
+    company: str = ""
+    job_title: str = ""
+    salutation: str = "Dear Hiring Manager,"
+    paragraphs: List[str] = Field(default_factory=list)
+    closing: str = "Sincerely,"
+
+
 class ResumeDocument(BaseModel):
     contact: RenderContact
     education: List[RenderEducation] = Field(default_factory=list)

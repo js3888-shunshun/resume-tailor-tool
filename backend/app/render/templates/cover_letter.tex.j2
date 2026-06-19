@@ -1,0 +1,36 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{10pt}
+\linespread{1.05}
+
+\begin{document}
+
+{\LARGE \textbf{\VAR{doc.contact.name | latex}}} \\[3pt]
+\VAR{contact_line}
+
+\vspace{14pt}
+\VAR{doc.date | latex}
+
+\BLOCK{if doc.company}
+Hiring Team, \VAR{doc.company | latex}
+\BLOCK{endif}
+\BLOCK{if doc.job_title}
+Re: \VAR{doc.job_title | latex}
+\BLOCK{endif}
+
+\VAR{doc.salutation | latex}
+
+\BLOCK{for p in doc.paragraphs}
+\VAR{p | latex}
+
+\BLOCK{endfor}
+\VAR{doc.closing | latex} \\[26pt]
+\VAR{doc.contact.name | latex}
+
+\end{document}

@@ -228,13 +228,23 @@ than spending tokens to rewrite. LLM content-compression intentionally NOT built
   oversized doc → `overflow` flagged (PDF still returned at tightest), ~2.5–4s per
   generate. No LLM tokens used.
 
-### M7 — Cover letter generation (Step 7)
+### M7 — Cover letter generation (Step 7)  ✅ Done
 **Goal:** JD profile + rewritten experience summary + basic info → cover letter PDF.
-- [ ] LLM generates the body; reserve a `company_context` field (Phase 2)
-- [ ] Separate simple LaTeX template + same escaping
-- [ ] Render & compile to PDF
-- **Acceptance:** Produces a structurally sound cover letter PDF; special chars
-  don't break compilation.
+- [x] `llm/prompts/cover_letter.py` — first-person, sincere, one page (3-4 paras,
+  ~250-330 words). HARD rules per user: NO em/en dashes, NO parentheses, and a
+  banned-AI-cliche list ("excited to", "leverage", "delve", "Furthermore", …).
+- [x] `pipeline/step7_cover_letter.py` `generate_cover_letter`: builds a truthful
+  background summary from the library (focused on the finalized selection when
+  given), one LLM call, `_sanitize` strips dashes/parens as a safety net.
+- [x] `schemas.CoverLetterDocument` + `render/cover_letter.py` + a simple
+  `cover_letter.tex.j2` (reuses the LaTeX-safe env + `latex_escape`).
+- [x] `POST /cover-letter` (+ `GET /cover-letter/pdf`), registered in main.
+- [x] UI: its own left sidebar tab "Cover Letter" — generate, preview, download
+  PDF/.tex named `CoverLetter_<Company>_<Role>`; one-page status.
+- **Acceptance:** ✅ pytest 84/84 (sanitizer, mock-LLM generation, real-content
+  grounding, render escaping/balance). Live on real library + an MLE JD: 1 page,
+  4 paragraphs, zero em-dashes/parens/banned phrases, grounded in real experiences
+  (ByteDance DiD, ESG factors, RAG) — natural and specific.
 
 ### M8 — End-to-end `/generate` wiring + UI polish
 **Goal:** Chain the whole pipeline behind one call and finish the UI.
@@ -250,6 +260,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-19 — M7 — ✅ Done. Cover letter (Step 7): `prompt/cover_letter.py` writes a one-page, first-person, sincere letter with HARD rules per user — no em/en dashes, no parentheses, banned AI-cliche list — grounded in the candidate's real background + the JD. `step7_cover_letter.generate_cover_letter` (truthful background from library/finalized selection, `_sanitize` strips dashes/parens as a net), `CoverLetterDocument` + `render/cover_letter.py` + `cover_letter.tex.j2`, `POST /cover-letter` + `GET /cover-letter/pdf`. UI: dedicated left "Cover Letter" tab (generate/preview/download), PDF+.tex named `CoverLetter_<Company>_<Role>`. Also: resume PDF/.tex download now named `Resume_<Company>_<Role>` from the JD profile. pytest 84/84; live on real library + MLE JD → 1 page, 4 paras, zero dashes/parens/banned phrases, grounded in real experiences.
 - 2026-06-19 — M6 — ✅ Done (re-scoped to typography-only per user, zero-LLM). One-page auto-fit: the template's vertical spacing is parameterised (`render/layout.py`: `Layout` + TIGHT/LOOSE/DEFAULT + `layout_for(scale)`; template knobs `\linespread`/`\parskip`/itemize/section-spacing are `\VAR{layout.*}`). `render/fit.py` `fit_to_one_page` compiles at varying `scale` and counts pages via pypdf: tightest-overflow → report `overflow` (UI asks to trim, no token spend); loosest-fits → use it; else binary-search the loosest spacing that stays one page (≤5 iters) so the page is filled evenly. `/render` gained `fit_one_page` (default on) + `fit_status`/`pages`; UI has a toggle + ✓/⚠ status. Decision: LLM content-compress/expand NOT built — user prefers manual trim over token cost; filling sparse pages is done purely by loosening spacing. pytest 80/80; live: sparse→fit scale 1.0, oversized→overflow, ~2.5–4s.
 - 2026-06-18 — M5-compile-fix — ✅ Done (bug: PDF generation 500'd on real runs). `compile.py` ran tectonic/pdflatex with `text=True` but no encoding, so on a Chinese Windows Python decoded their UTF-8 output with GBK → `UnicodeDecodeError` in the reader thread → `proc.stdout/stderr` came back `None` → `log += proc.stdout + proc.stderr` raised `TypeError`, which `try_compile` didn't catch (it only caught `CompileError`), 500'ing `/render`. Fix: force `encoding="utf-8", errors="replace"`, guard the concat with `(... or "")`, and broaden `try_compile` to swallow ANY exception (degrade to tex-only, never 500). Verified live: bullets with en/em-dash, curly quotes, ≥, → now return `pdf_available=True` over HTTP. Reverted the `start.bat --reload` from the previous entry — its watcher+worker orphans and re-holds port 8000 (the documented reason this project runs without reload). pytest 71/71 (+test_compile.py).
 - 2026-06-18 — M5-bullets+bold — ✅ Done (per user feedback). (1) Rewrite now targets exactly 3-4 dense bullets per experience (was 4-6), instructed to CONSOLIDATE so the 3-4 still cover all essential info (responsibility, methods/tools, scale, impact) rather than dropping facts. (2) Bolding in the PDF broadened: `matched_keywords` now also carries the core methods/tools/techniques (not just JD keywords) so they bold via `\hlkw`; and `render_bullet` auto-bolds standalone numbers/metrics (`30\%`, `\$1.2M`, `12x`, `1,000`) via `_NUMBER_RE` on the escaped text, skipping digits already inside a keyword (S3) or another `\hlkw`. Verified live: `Built a \hlkw{RAG} ... \hlkw{30\%} ... \hlkw{12x} ... \hlkw{1,000}`. Also added `--reload` (+`*.j2`) to `start.bat` so edits no longer need a manual restart. pytest 68/68.
