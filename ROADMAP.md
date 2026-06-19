@@ -246,20 +246,29 @@ than spending tokens to rewrite. LLM content-compression intentionally NOT built
   4 paragraphs, zero em-dashes/parens/banned phrases, grounded in real experiences
   (ByteDance DiD, ESG factors, RAG) — natural and specific.
 
-### M8 — End-to-end `/generate` wiring + UI polish
+### M8 — End-to-end `/generate` wiring + UI polish  ✅ Done (functional; visual restyle pending per user)
 **Goal:** Chain the whole pipeline behind one call and finish the UI.
-(The frontend itself was brought forward to M2.5 and grows each milestone; this
-milestone is the final integration + polish, not the first frontend.)
-- [ ] `POST /generate`: chain Step 2-7, return two PDF links + intermediate results
-- [ ] `GET /materials` / `PUT /materials` (+ a basic material-editing UI)
-- [ ] Single "Generate" button in `index.html`: JD → profile → selection → both PDFs to download
-- **Acceptance:** From the page, paste a JD, click once, see intermediate
-  results and download both PDFs.
+- [x] `POST /generate` (`routers/generate.py`): chains Step 2-7 by COMPOSING the
+  existing endpoint functions (analyze → select → rewrite + tailor_skills → render
+  endpoint with fit → cover-letter endpoint), so behaviour matches the tabs exactly.
+  Returns profile, selection, rewritten exps/projs, skill_groups, `resume`
+  (RenderResult) and `cover` (CoverLetterResult). PDFs at `/render/pdf` + `/cover-letter/pdf`.
+- [x] `GET`/`PUT /materials` already exist (M3.5); library editor in the Library tab.
+- [x] One-click "One-Click" left tab: JD textarea + targets + toggles (bold / fit /
+  cover) + optional cover personalization; one button renders both PDFs side by side
+  with download links named `Resume_…` / `CoverLetter_…` and a one-page/overflow status.
+  Defaults 3 exp / 1 proj so the default result fits one page.
+- **Acceptance:** ✅ pytest 89/89 (+test_generate: chaining wires rewrite→render &
+  →cover, cover can be skipped). Live end-to-end on real library + MLE JD: full run
+  ~42–62s, profile+selection+5 skill groups, resume PDF (3/1 → fit one page; 4/2 →
+  overflow flagged), cover PDF 1 page / 4 paras. UI shows both previews + downloads.
+- **Note:** visual/style polish intentionally deferred — user will adjust the UI look next.
 
 ---
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-19 — M8 — ✅ Done (functional; visual restyle deferred per user). One-click end-to-end: `POST /generate` (`routers/generate.py`) chains Step 2-7 by COMPOSING the existing endpoint functions (analyze_jd → select_experiences → rewrite_selected + tailor_skills → /render endpoint with one-page fit → /cover-letter endpoint), returning profile, selection, rewritten exps/projs, skill_groups, resume (RenderResult) and cover (CoverLetterResult); both PDFs served at the existing GET routes. New "One-Click" left tab: JD textarea + targets + toggles (bold/fit/cover) + optional cover personalization, one button → both PDFs previewed side by side with `Resume_…`/`CoverLetter_…` downloads and one-page/overflow status; defaults 3 exp / 1 proj so the default fits one page. pytest 89/89 (+test_generate). Live: full run ~42-62s; 3/1 → resume fits one page, cover 1 page / 4 paras.
 - 2026-06-19 — M7-rev — ✅ Done (quality pass per user's 4-paragraph template). Rewrote the cover-letter prompt to the standard structure: P1 Intro (school+major, role, honest specific reason), P2 Why-this-company (MOST important: use company notes + raw JD to name a concrete value/product/project or a person spoken with, no generic praise, no fabrication), P3 Why-you (exactly TWO abilities, one real example each, explain not restate), P4 Thank-you. Targets ~400-460 words to FILL one page; expanded banned-cliche list. Added grounding inputs: raw `jd_text` + `company_notes` (the request and UI now pass them; UI got a "Why this company" textarea). Optional `recruiter`/`company_address` recipient lines — rendered only when provided (per user), and the salutation uses the recruiter name when given. pytest 87/87; live on real library + MLE JD with notes naming a contact → 1 page, 4 paras, 408 words, name-drops the contact and the eval-harness culture in P2, two explained abilities in P3, zero dashes/parens/cliches.
 - 2026-06-19 — M7 — ✅ Done. Cover letter (Step 7): `prompt/cover_letter.py` writes a one-page, first-person, sincere letter with HARD rules per user — no em/en dashes, no parentheses, banned AI-cliche list — grounded in the candidate's real background + the JD. `step7_cover_letter.generate_cover_letter` (truthful background from library/finalized selection, `_sanitize` strips dashes/parens as a net), `CoverLetterDocument` + `render/cover_letter.py` + `cover_letter.tex.j2`, `POST /cover-letter` + `GET /cover-letter/pdf`. UI: dedicated left "Cover Letter" tab (generate/preview/download), PDF+.tex named `CoverLetter_<Company>_<Role>`. Also: resume PDF/.tex download now named `Resume_<Company>_<Role>` from the JD profile. pytest 84/84; live on real library + MLE JD → 1 page, 4 paras, zero dashes/parens/banned phrases, grounded in real experiences.
 - 2026-06-19 — M6 — ✅ Done (re-scoped to typography-only per user, zero-LLM). One-page auto-fit: the template's vertical spacing is parameterised (`render/layout.py`: `Layout` + TIGHT/LOOSE/DEFAULT + `layout_for(scale)`; template knobs `\linespread`/`\parskip`/itemize/section-spacing are `\VAR{layout.*}`). `render/fit.py` `fit_to_one_page` compiles at varying `scale` and counts pages via pypdf: tightest-overflow → report `overflow` (UI asks to trim, no token spend); loosest-fits → use it; else binary-search the loosest spacing that stays one page (≤5 iters) so the page is filled evenly. `/render` gained `fit_one_page` (default on) + `fit_status`/`pages`; UI has a toggle + ✓/⚠ status. Decision: LLM content-compress/expand NOT built — user prefers manual trim over token cost; filling sparse pages is done purely by loosening spacing. pytest 80/80; live: sparse→fit scale 1.0, oversized→overflow, ~2.5–4s.
