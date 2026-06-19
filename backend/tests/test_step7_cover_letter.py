@@ -71,6 +71,32 @@ def test_background_includes_real_content():
     assert "Globex" in captured["user"]  # target company
 
 
+def test_company_notes_and_jd_text_reach_prompt():
+    captured = {}
+
+    def responder(system, user):
+        captured["user"] = user
+        return json.dumps({"salutation": "Dear Hiring Manager,", "paragraphs": ["x"], "closing": "Sincerely,"})
+
+    generate_cover_letter(_jd(), _lib(),
+                          jd_text="We build a retrieval platform for search.",
+                          company_notes="Spoke with Jane Li about the eval-first culture.",
+                          client=LLMClient(responder=responder))
+    assert "Jane Li" in captured["user"]
+    assert "retrieval platform" in captured["user"]
+
+
+def test_company_notes_absent_marked_none():
+    captured = {}
+
+    def responder(system, user):
+        captured["user"] = user
+        return json.dumps({"salutation": "Dear Hiring Manager,", "paragraphs": ["x"], "closing": "Sincerely,"})
+
+    generate_cover_letter(_jd(), _lib(), client=LLMClient(responder=responder))
+    assert "(none provided)" in captured["user"]
+
+
 def test_render_cover_letter_escapes_and_balances():
     doc = CoverLetterDocument(
         contact=RenderContact(name="Joy & Co", email="j@x.com", location="NYC"),
@@ -85,3 +111,20 @@ def test_render_cover_letter_escapes_and_balances():
     assert r"30\%" in tex and r"\$1M" in tex
     assert r"Globex 50\%" in tex
     assert "Dear Hiring Manager," in tex
+    # No recruiter/address given -> those lines must not appear.
+    assert "Re: ML Engineer" in tex
+
+
+def test_render_cover_letter_recipient_block_optional():
+    base = dict(
+        contact=RenderContact(name="Joy Sun", email="j@x.com"),
+        date="June 19, 2026", company="Globex", job_title="MLE",
+        salutation="Dear Jane,", paragraphs=["p"], closing="Sincerely,",
+    )
+    with_block = render_cover_letter(CoverLetterDocument(
+        recruiter="Jane Li", company_address="1 Market St, NYC", **base))
+    assert "Jane Li" in with_block and "1 Market St, NYC" in with_block
+    assert with_block.count("{") == with_block.count("}")
+
+    without = render_cover_letter(CoverLetterDocument(**base))
+    assert "1 Market St" not in without and "Jane Li" not in without

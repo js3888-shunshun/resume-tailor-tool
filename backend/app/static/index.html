@@ -311,7 +311,15 @@
       <section class="tab-panel" id="tab-cover" hidden>
         <div class="card" id="cover">
           <p class="field-title" style="margin:0 0 6px;">Cover letter (Step 7)</p>
-          <div class="hint" style="margin-bottom:10px;">Writes a one-page cover letter in your voice, grounded in your real background and this role. Plain and sincere on purpose: no em dashes, no parentheses, none of the usual AI filler. Run <b>Analyze &amp; Select</b> in the Tailor tab first; finalizing your draft there makes the letter use your tailored bullets.</div>
+          <div class="hint" style="margin-bottom:10px;">Writes a one-page, four-paragraph cover letter in your voice (Intro · Why this company · Why you · Thank you), grounded in your real background and this role. Plain and sincere on purpose: no em dashes, no parentheses, none of the usual AI filler. Run <b>Analyze &amp; Select</b> in the Tailor tab first; finalizing your draft there makes the letter use your tailored bullets.</div>
+          <div style="margin-bottom:10px;">
+            <label class="hint" style="display:block; margin-bottom:4px;">Why this company — your research (a project/value you admire, anyone you've spoken with). This powers the most important paragraph; leave blank and it stays grounded in the JD.</label>
+            <textarea id="coverNotes" rows="3" placeholder="e.g. Spoke with Jane Li (MLE) about the retrieval platform team; I like that you ship eval harnesses before models…" style="width:100%; box-sizing:border-box;"></textarea>
+            <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
+              <input id="coverRecruiter" type="text" placeholder="Recruiter name (optional)" style="flex:1; min-width:160px;">
+              <input id="coverAddress" type="text" placeholder="Company office address (optional)" style="flex:2; min-width:200px;">
+            </div>
+          </div>
           <div class="final-bar">
             <button id="coverBtn">Generate &amp; preview letter</button>
             <a id="coverPdfLink" class="mini" href="/cover-letter/pdf" download="CoverLetter.pdf" style="display:none;">Download PDF</a>
@@ -847,6 +855,10 @@ versions in production is required. Fast-paced startup environment.`;
           jd_profile: LAST_PROFILE,
           selected_experiences: (FINAL_DRAFT && FINAL_DRAFT.selected_experiences) || (WORKING && WORKING.experiences) || [],
           selected_projects: (FINAL_DRAFT && FINAL_DRAFT.selected_projects) || (WORKING && WORKING.projects) || [],
+          jd_text: ($('jd') && $('jd').value || '').trim(),
+          company_notes: ($('coverNotes') && $('coverNotes').value || '').trim(),
+          recruiter: ($('coverRecruiter') && $('coverRecruiter').value || '').trim(),
+          company_address: ($('coverAddress') && $('coverAddress').value || '').trim(),
         };
         const r = await fetch('/cover-letter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await r.json();

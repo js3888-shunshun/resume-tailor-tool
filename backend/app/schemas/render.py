@@ -66,7 +66,9 @@ class CoverLetterDocument(BaseModel):
 
     contact: RenderContact
     date: str = ""              # e.g. "June 19, 2026"
+    recruiter: str = ""         # optional addressee name/title line
     company: str = ""
+    company_address: str = ""   # optional office address line
     job_title: str = ""
     salutation: str = "Dear Hiring Manager,"
     paragraphs: List[str] = Field(default_factory=list)

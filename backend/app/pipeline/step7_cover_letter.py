@@ -72,9 +72,15 @@ def generate_cover_letter(
     library: MaterialsLibrary,
     selected_experiences: Optional[List[SelectedExperience]] = None,
     selected_projects: Optional[List[SelectedExperience]] = None,
+    jd_text: str = "",
+    company_notes: str = "",
     client: Optional[LLMClient] = None,
 ) -> dict:
-    """Return {'salutation', 'paragraphs': [...], 'closing'} for the cover letter."""
+    """Return {'salutation', 'paragraphs': [...], 'closing'} for the cover letter.
+
+    `company_notes` (the candidate's research / people they've spoken with) and the
+    raw `jd_text` ground the all-important "Why this company" paragraph.
+    """
     selected = list(selected_experiences or []) + list(selected_projects or [])
     user = COVER_LETTER_USER.format(
         job_title=jd.job_title or "the role",
@@ -82,10 +88,12 @@ def generate_cover_letter(
         responsibilities="; ".join(jd.key_responsibilities) or "(not specified)",
         skills=", ".join(jd.key_skills) or "(not specified)",
         tone=jd.tone_hints or "professional, warm, sincere",
+        company_notes=company_notes.strip() or "(none provided)",
+        jd_text=(jd_text or "").strip()[:2000] or "(not provided)",
         background=_background(jd, library, selected),
     )
     client = client or LLMClient()
-    raw = client.complete_json(COVER_LETTER_SYSTEM, user, max_tokens=1200)
+    raw = client.complete_json(COVER_LETTER_SYSTEM, user, max_tokens=1500)
     data = raw if isinstance(raw, dict) else {}
 
     paragraphs = [_sanitize(str(p)) for p in (data.get("paragraphs") or []) if str(p).strip()]

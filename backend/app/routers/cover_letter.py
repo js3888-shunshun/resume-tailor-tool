@@ -35,6 +35,13 @@ class CoverLetterRequest(BaseModel):
     # Optional finalized selection to ground the letter in tailored content.
     selected_experiences: List[SelectedExperience] = Field(default_factory=list)
     selected_projects: List[SelectedExperience] = Field(default_factory=list)
+    # Raw JD text + the candidate's company research, used for the "Why this
+    # company" paragraph (grounded, not fabricated).
+    jd_text: str = ""
+    company_notes: str = ""
+    # Optional addressee details; omitted from the letter when blank.
+    recruiter: str = ""
+    company_address: str = ""
 
 
 class CoverLetterResult(BaseModel):
@@ -58,16 +65,23 @@ def cover_letter(req: CoverLetterRequest) -> CoverLetterResult:
         req.jd_profile, lib,
         selected_experiences=req.selected_experiences,
         selected_projects=req.selected_projects,
+        jd_text=req.jd_text,
+        company_notes=req.company_notes,
     )
 
     pi = lib.personal_info
+    recruiter = req.recruiter.strip()
+    # Address the salutation to the recruiter by name when we have one.
+    salutation = f"Dear {recruiter}," if recruiter else parts["salutation"]
     doc = CoverLetterDocument(
         contact=RenderContact(name=pi.name, email=pi.email, phone=pi.phone,
                               location=pi.location, links=pi.links),
         date=date.today().strftime("%B %d, %Y"),
+        recruiter=recruiter,
         company=req.jd_profile.company,
+        company_address=req.company_address.strip(),
         job_title=req.jd_profile.job_title,
-        salutation=parts["salutation"],
+        salutation=salutation,
         paragraphs=parts["paragraphs"],
         closing=parts["closing"],
     )
@@ -78,7 +92,7 @@ def cover_letter(req: CoverLetterRequest) -> CoverLetterResult:
     pdf = try_compile(tex, settings.output_dir, stem="cover_letter") if engine else None
     return CoverLetterResult(
         tex=tex,
-        salutation=doc.salutation,
+        salutation=salutation,
         paragraphs=doc.paragraphs,
         closing=doc.closing,
         pdf_available=pdf is not None,

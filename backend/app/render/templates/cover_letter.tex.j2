@@ -17,13 +17,18 @@
 \vspace{14pt}
 \VAR{doc.date | latex}
 
+\BLOCK{if doc.recruiter}
+\VAR{doc.recruiter | latex} \\
+\BLOCK{endif}
 \BLOCK{if doc.company}
-Hiring Team, \VAR{doc.company | latex}
+\VAR{doc.company | latex}\BLOCK{if doc.company_address} \\
+\VAR{doc.company_address | latex}\BLOCK{endif}
+
 \BLOCK{endif}
 \BLOCK{if doc.job_title}
 Re: \VAR{doc.job_title | latex}
-\BLOCK{endif}
 
+\BLOCK{endif}
 \VAR{doc.salutation | latex}
 
 \BLOCK{for p in doc.paragraphs}
