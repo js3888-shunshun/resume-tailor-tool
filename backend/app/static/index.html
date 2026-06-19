@@ -863,7 +863,8 @@ versions in production is required. Fast-paced startup environment.`;
           $('pdfLink').style.display = 'inline-block';
           const url = '/render/pdf?t=' + Date.now();  // cache-bust so the new PDF shows
           $('pdfLink').href = url;
-          $('pdfLink').download = docBaseName() + '.pdf';  // Resume_<Company>_<Role>.pdf
+          // Safe download: validate it's really a PDF before saving (Resume_<Company>_<Role>.pdf).
+          $('pdfLink').onclick = (ev) => { ev.preventDefault(); savePdf('/render/pdf?t=' + Date.now(), docBaseName() + '.pdf', $('render-hint')); };
           $('pdf-frame').src = url; $('pdf-preview').style.display = 'block';
           const h = $('render-hint');
           if (data.fit_status === 'overflow') {
@@ -883,6 +884,25 @@ versions in production is required. Fast-paced startup environment.`;
     // Build a download base name like "Resume_Acme_ML_Engineer" from the JD profile.
     function sanitizeFilePart(s) {
       return (s || '').trim().replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+    }
+    // Download a PDF the SAFE way: fetch it, verify the bytes really are a PDF
+    // (a "%PDF-" header), then save. This guarantees we never save a JSON error
+    // body (e.g. "PDF not ready") under a .pdf name, which a recipient can't open.
+    async function savePdf(url, filename, hintEl) {
+      const setHint = (m) => { if (hintEl) hintEl.textContent = m; else alert(m); };
+      try {
+        const r = await fetch(url, { cache: 'no-store' });
+        const blob = await r.blob();
+        const head = await blob.slice(0, 5).text();
+        if (!r.ok || head !== '%PDF-') {
+          setHint('PDF not ready — click Generate again, then download.');
+          return;
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+        a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      } catch (e) { setHint('Download failed: ' + e.message); }
     }
     function docBaseName() {
       const parts = ['Resume'];
@@ -920,7 +940,8 @@ versions in production is required. Fast-paced startup environment.`;
         if (data.pdf_available) {
           $('coverPdfLink').style.display = 'inline-block';
           const url = '/cover-letter/pdf?t=' + Date.now();
-          $('coverPdfLink').href = url; $('coverPdfLink').download = coverBaseName() + '.pdf';
+          $('coverPdfLink').href = url;
+          $('coverPdfLink').onclick = (ev) => { ev.preventDefault(); savePdf('/cover-letter/pdf?t=' + Date.now(), coverBaseName() + '.pdf', $('cover-hint')); };
           $('cover-frame').src = url; $('cover-preview').style.display = 'block';
           const over = data.pages && data.pages > 1;
           $('cover-hint').innerHTML = over
@@ -976,7 +997,8 @@ versions in production is required. Fast-paced startup environment.`;
         if (data.resume && data.resume.pdf_available) {
           const u = '/render/pdf?t=' + Date.now();
           $('gen-resume-frame').src = u;
-          const a = $('gen-resume-pdf'); a.href = u; a.download = docBaseName() + '.pdf'; a.style.display = 'inline-block';
+          const a = $('gen-resume-pdf'); a.href = u; a.style.display = 'inline-block';
+          a.onclick = (ev) => { ev.preventDefault(); savePdf('/render/pdf?t=' + Date.now(), docBaseName() + '.pdf', $('gen-resume-hint')); };
           $('gen-resume-hint').innerHTML = data.resume.fit_status === 'overflow'
             ? `<span style="color:#b45309;">⚠ ${data.resume.pages} pages — trim a little</span>`
             : `<span style="color:#15803d;">✓ one page</span>`;
@@ -985,7 +1007,8 @@ versions in production is required. Fast-paced startup environment.`;
         if (data.cover && data.cover.pdf_available) {
           const u = '/cover-letter/pdf?t=' + Date.now();
           $('gen-cover-frame').src = u;
-          const a = $('gen-cover-pdf'); a.href = u; a.download = coverBaseName() + '.pdf'; a.style.display = 'inline-block';
+          const a = $('gen-cover-pdf'); a.href = u; a.style.display = 'inline-block';
+          a.onclick = (ev) => { ev.preventDefault(); savePdf('/cover-letter/pdf?t=' + Date.now(), coverBaseName() + '.pdf', $('gen-cover-hint')); };
           $('gen-cover-hint').innerHTML = (data.cover.pages > 1)
             ? `<span style="color:#b45309;">⚠ ${data.cover.pages} pages</span>`
             : `<span style="color:#15803d;">✓ one page</span>`;
