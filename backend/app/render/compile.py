@@ -61,6 +61,16 @@ def compile_tex(tex: str, out_dir: Path, stem: str = "resume") -> Path:
         return final
 
 
+def count_pages(pdf: Path) -> Optional[int]:
+    """Page count of a compiled PDF, or None if it can't be read."""
+    try:
+        from pypdf import PdfReader
+
+        return len(PdfReader(str(pdf)).pages)
+    except Exception:  # noqa: BLE001 - missing/corrupt PDF -> unknown
+        return None
+
+
 def try_compile(tex: str, out_dir: Path, stem: str = "resume") -> Optional[Path]:
     """Best-effort compile: return the PDF path, or None on any failure.
 

@@ -22,6 +22,7 @@ from typing import Iterable
 import jinja2
 
 from ..schemas import RenderBullet, RenderEntry, ResumeDocument
+from .layout import DEFAULT as DEFAULT_LAYOUT, Layout
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
@@ -168,8 +169,12 @@ def _build_env() -> jinja2.Environment:
     return env
 
 
-def render_resume(doc: ResumeDocument) -> str:
-    """Render a complete `ResumeDocument` to a LaTeX source string."""
+def render_resume(doc: ResumeDocument, layout: Layout | None = None) -> str:
+    """Render a complete `ResumeDocument` to a LaTeX source string.
+
+    `layout` tunes the template's vertical spacing (Step 6 one-page fit); when
+    omitted the default spacing is used.
+    """
     env = _build_env()
     # `bullet` needs the per-document highlight flag, so bind it here.
     env.filters["bullet"] = lambda b: render_bullet(b, highlight=doc.highlight)
@@ -178,4 +183,5 @@ def render_resume(doc: ResumeDocument) -> str:
         doc=doc,
         contact_line=_contact_line(doc),
         skills_block=_skills_block(doc),
+        layout=(layout or DEFAULT_LAYOUT).as_template(),
     )

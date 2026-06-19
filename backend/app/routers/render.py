@@ -19,6 +19,7 @@ from ..config import get_settings
 from ..latex_tools import detect_latex_engine
 from ..materials_store import load_materials
 from ..render.compile import try_compile
+from ..render.fit import fit_to_one_page
 from ..render.latex import render_resume
 from ..schemas import (
     Education,
@@ -49,12 +50,19 @@ class RenderRequest(BaseModel):
     skills: List[str] = Field(default_factory=list)
     highlight: bool = True
     projects_heading: str = "Research Experience"
+    # Step 6: auto-tune spacing to land on exactly one page (needs an engine).
+    fit_one_page: bool = True
 
 
 class RenderResult(BaseModel):
     tex: str
     pdf_available: bool = False
     engine: Optional[str] = None
+    # Step 6 outcome: "fit" (landed on one page), "overflow" (too long even at
+    # tightest spacing — trim manually), "no_engine", "error", or None if fit
+    # wasn't run. `pages` is the chosen layout's page count.
+    fit_status: Optional[str] = None
+    pages: Optional[int] = None
 
 
 def _bullets(group: SelectedExperience) -> List[RenderBullet]:
@@ -150,15 +158,27 @@ def render(req: RenderRequest) -> RenderResult:
         raise HTTPException(status_code=500, detail=f"Could not load library: {e}")
 
     doc = _build_document(req, lib)
-    tex = render_resume(doc)
-
     settings = get_settings()
     engine = detect_latex_engine()
+
+    if req.fit_one_page and engine:
+        fit = fit_to_one_page(doc, settings.output_dir, stem="resume")
+        return RenderResult(
+            tex=fit.tex,
+            pdf_available=fit.pdf_available,
+            engine=engine.name,
+            fit_status=fit.status,
+            pages=fit.pages,
+        )
+
+    # No fit requested (or no engine): single render/compile at default spacing.
+    tex = render_resume(doc)
     pdf_path = try_compile(tex, settings.output_dir, stem="resume") if engine else None
     return RenderResult(
         tex=tex,
         pdf_available=pdf_path is not None,
         engine=engine.name if engine else None,
+        fit_status="no_engine" if not engine else None,
     )
 
 

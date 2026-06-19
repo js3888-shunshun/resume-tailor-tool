@@ -205,18 +205,28 @@ selection, on the user's finalized (manually adjustable) working set.
   - pytest 64/64. Live: real `/rewrite` regrouped 50 skills → 5 JD groups (ML & AI
     first, finance skills dropped for an MLE JD); grouped render two-up verified.
 
-### M6 — Compile + one-page check loop (Step 6, core agent loop)
-**Goal:** `.tex` → compile → check page count → compress & retry if too long,
-implemented as a state machine / loop.
-- [ ] Compile wrapper (capture logs/errors)
-- [ ] Read page count via pypdf
-- [ ] > 1 page: pick longest / lowest-priority bullets → LLM compress → re-render & re-compile
-- [ ] Max iterations (default 5); on exceed, return best-effort + notice
-- [ ] Compile failure: capture log, locate suspected escape issue, log in detail
-- [ ] Structured logging of every iteration's input/output/state change
-- **Acceptance:** Deliberately oversized content compresses to one page within
-  ≤5 iterations or reports failure clearly; readable logs throughout; compile
-  errors traceable to specific content.
+### M6 — One-page auto-fit loop (Step 6)  ✅ Done
+**Goal:** `.tex` → compile → check page count → adjust to land on EXACTLY one page,
+as a deterministic loop. (Re-scoped per user: typography-only, zero-LLM — mimic a
+person nudging spacing. Loosen to fill a sparse page; tighten to fit a full one.
+If even the tightest spacing overflows, report "too long, trim manually" rather
+than spending tokens to rewrite. LLM content-compression intentionally NOT built.)
+- [x] Compile wrapper already captures logs/errors (M5-compile-fix); `count_pages`
+  via pypdf added to `render/compile.py`.
+- [x] Parameterised spacing: `render/layout.py` (`Layout` dataclass + `TIGHT`/
+  `LOOSE`/`DEFAULT` presets + `layout_for(scale)` interpolation); template knobs
+  (`\linespread`, `\parskip`, itemize `topsep`/`itemsep`, section spacing) are now
+  `\VAR{layout.*}`; `render_resume(doc, layout=None)`.
+- [x] `render/fit.py` `fit_to_one_page`: check tightest (overflow?) → check loosest
+  (fits? use it) → binary-search the largest scale that stays 1 page (≤5 iters);
+  compiles the winner to `output/resume.pdf`. Returns status fit/overflow/no_engine/error.
+- [x] `/render` gained `fit_one_page` (default on) + `fit_status`/`pages` in the
+  result; UI got a "fit to one page" toggle and a ✓/⚠ status line.
+- **Acceptance:** ✅ pytest 80/80 (+test_layout, +test_fit with a mocked height
+  model covering overflow / loosest-fits / binary-search-fills / cleanup). Live
+  end-to-end on real tectonic: sparse doc → `fit` scale=1.0 (fills the page),
+  oversized doc → `overflow` flagged (PDF still returned at tightest), ~2.5–4s per
+  generate. No LLM tokens used.
 
 ### M7 — Cover letter generation (Step 7)
 **Goal:** JD profile + rewritten experience summary + basic info → cover letter PDF.
@@ -240,6 +250,7 @@ milestone is the final integration + polish, not the first frontend.)
 
 ## Changelog
 > Reverse chronological. Format: `date — milestone — what was done / acceptance result`
+- 2026-06-19 — M6 — ✅ Done (re-scoped to typography-only per user, zero-LLM). One-page auto-fit: the template's vertical spacing is parameterised (`render/layout.py`: `Layout` + TIGHT/LOOSE/DEFAULT + `layout_for(scale)`; template knobs `\linespread`/`\parskip`/itemize/section-spacing are `\VAR{layout.*}`). `render/fit.py` `fit_to_one_page` compiles at varying `scale` and counts pages via pypdf: tightest-overflow → report `overflow` (UI asks to trim, no token spend); loosest-fits → use it; else binary-search the loosest spacing that stays one page (≤5 iters) so the page is filled evenly. `/render` gained `fit_one_page` (default on) + `fit_status`/`pages`; UI has a toggle + ✓/⚠ status. Decision: LLM content-compress/expand NOT built — user prefers manual trim over token cost; filling sparse pages is done purely by loosening spacing. pytest 80/80; live: sparse→fit scale 1.0, oversized→overflow, ~2.5–4s.
 - 2026-06-18 — M5-compile-fix — ✅ Done (bug: PDF generation 500'd on real runs). `compile.py` ran tectonic/pdflatex with `text=True` but no encoding, so on a Chinese Windows Python decoded their UTF-8 output with GBK → `UnicodeDecodeError` in the reader thread → `proc.stdout/stderr` came back `None` → `log += proc.stdout + proc.stderr` raised `TypeError`, which `try_compile` didn't catch (it only caught `CompileError`), 500'ing `/render`. Fix: force `encoding="utf-8", errors="replace"`, guard the concat with `(... or "")`, and broaden `try_compile` to swallow ANY exception (degrade to tex-only, never 500). Verified live: bullets with en/em-dash, curly quotes, ≥, → now return `pdf_available=True` over HTTP. Reverted the `start.bat --reload` from the previous entry — its watcher+worker orphans and re-holds port 8000 (the documented reason this project runs without reload). pytest 71/71 (+test_compile.py).
 - 2026-06-18 — M5-bullets+bold — ✅ Done (per user feedback). (1) Rewrite now targets exactly 3-4 dense bullets per experience (was 4-6), instructed to CONSOLIDATE so the 3-4 still cover all essential info (responsibility, methods/tools, scale, impact) rather than dropping facts. (2) Bolding in the PDF broadened: `matched_keywords` now also carries the core methods/tools/techniques (not just JD keywords) so they bold via `\hlkw`; and `render_bullet` auto-bolds standalone numbers/metrics (`30\%`, `\$1.2M`, `12x`, `1,000`) via `_NUMBER_RE` on the escaped text, skipping digits already inside a keyword (S3) or another `\hlkw`. Verified live: `Built a \hlkw{RAG} ... \hlkw{30\%} ... \hlkw{12x} ... \hlkw{1,000}`. Also added `--reload` (+`*.j2`) to `start.bat` so edits no longer need a manual restart. pytest 68/68.
 - 2026-06-18 — M5-spacing-fix — ✅ Done (follow-up: changes weren't showing). Two causes: (1) the running `start.bat` server had no `--reload`, so it served pre-edit code — restarted it. (2) The saved `materials.json` parked GPA (`GPA: 3.9/4.0`) and the undergrad city (`Chengdu, China`) inside education `details`, so they rendered as bullets regardless of the new fields — migrated the data in place (GPA → `gpa` field, dropped the city bullet). Also switched the GPA separator from `\hspace{2em}` to ` | ` per the requested `Major | GPA: x` look. Verified via live `POST /render`: GPA on the major line, no education location, skills one-per-line. pytest 66/66.

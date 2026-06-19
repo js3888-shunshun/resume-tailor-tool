@@ -12,14 +12,15 @@
 
 \pagestyle{empty}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{0pt}
+\setlength{\parskip}{\VAR{layout.parskip}}
+% Vertical spacing below is parameterised so the Step 6 fit loop can tighten to
+% fit one page or loosen to fill a sparse page.
+\linespread{\VAR{layout.line_spread}}
 
-% Tight bullet lists: no extra space between items or around the list, so bullet
-% spacing matches normal line spacing.
-\setlist[itemize]{leftmargin=15pt, label=$\bullet$, topsep=1pt, itemsep=0pt, parsep=0pt, partopsep=0pt}
+\setlist[itemize]{leftmargin=15pt, label=$\bullet$, topsep=\VAR{layout.item_topsep}, itemsep=\VAR{layout.item_itemsep}, parsep=0pt, partopsep=0pt}
 
 \titleformat{\section}{\large\bfseries\uppercase}{}{0pt}{}[\titlerule]
-\titlespacing{\section}{0pt}{4pt}{2pt}
+\titlespacing{\section}{0pt}{\VAR{layout.section_before}}{\VAR{layout.section_after}}
 
 \begin{document}
 

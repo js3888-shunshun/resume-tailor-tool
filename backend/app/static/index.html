@@ -289,11 +289,12 @@
         </div>
 
         <div class="card" id="render" style="display:none;">
-          <p class="field-title" style="margin:0 0 6px;">Resume document (Step 5)</p>
-          <div class="hint" style="margin-bottom:10px;">Renders your finalized draft into a one-page LaTeX resume in your template's style and compiles it to PDF. Matched JD keywords are set <b>bold</b> for ATS.</div>
+          <p class="field-title" style="margin:0 0 6px;">Resume document (Steps 5–6)</p>
+          <div class="hint" style="margin-bottom:10px;">Renders your finalized draft into a LaTeX resume in your template's style and compiles it to PDF. Matched JD keywords are set <b>bold</b> for ATS. With <b>fit to one page</b> on, the spacing is auto-tuned to land on exactly one page — loosened to fill a sparse page, tightened to fit a full one.</div>
           <div class="final-bar">
             <button id="genBtn">Generate &amp; preview PDF</button>
             <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="hlToggle" checked> bold JD keywords</label>
+            <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="fitToggle" checked> fit to one page</label>
             <a id="pdfLink" class="mini" href="/render/pdf" download="resume.pdf" style="display:none;">Download PDF</a>
             <button class="mini" id="texDownloadBtn" disabled>Download .tex</button>
             <span class="hint" id="render-hint"></span>
@@ -762,7 +763,8 @@ versions in production is required. Fast-paced startup environment.`;
     async function generateResume() {
       if (!FINAL_DRAFT) { $('render-hint').textContent = 'Finalize the draft first.'; return; }
       const btn = $('genBtn'); btn.disabled = true; const old = btn.textContent;
-      btn.innerHTML = '<span class="spinner"></span> Rendering…';
+      const fit = $('fitToggle').checked;
+      btn.innerHTML = '<span class="spinner"></span> ' + (fit ? 'Fitting to one page…' : 'Rendering…');
       try {
         const body = {
           selected_experiences: FINAL_DRAFT.selected_experiences || [],
@@ -770,6 +772,7 @@ versions in production is required. Fast-paced startup environment.`;
           skill_groups: FINAL_DRAFT.skill_groups || [],
           skills: (WORKING && WORKING.skills) || [],
           highlight: $('hlToggle').checked,
+          fit_one_page: fit,
           projects_heading: 'Research Experience',
         };
         const r = await fetch('/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -781,7 +784,14 @@ versions in production is required. Fast-paced startup environment.`;
           const url = '/render/pdf?t=' + Date.now();  // cache-bust so the new PDF shows
           $('pdfLink').href = url;
           $('pdf-frame').src = url; $('pdf-preview').style.display = 'block';
-          $('render-hint').textContent = `Compiled to PDF with ${data.engine}. Preview below.`;
+          const h = $('render-hint');
+          if (data.fit_status === 'overflow') {
+            h.innerHTML = `<b style="color:#b45309;">⚠ Content is too long for one page</b> — the PDF is ${data.pages} pages even at the tightest spacing. Trim a few bullets or remove a less-relevant experience, then re-generate.`;
+          } else if (data.fit_status === 'fit') {
+            h.innerHTML = `<b style="color:#15803d;">✓ Fit to one page</b> — spacing auto-balanced to fill the page. Compiled with ${data.engine}.`;
+          } else {
+            h.textContent = `Compiled to PDF with ${data.engine}. Preview below.`;
+          }
         } else {
           $('pdfLink').style.display = 'none'; $('pdf-preview').style.display = 'none'; $('pdf-frame').removeAttribute('src');
           $('render-hint').textContent = 'No LaTeX engine found — .tex is ready, but PDF compile is unavailable.';
