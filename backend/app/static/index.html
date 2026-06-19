@@ -60,6 +60,10 @@
     .muted { color: var(--muted); }
     details.raw { margin-top: 14px; }
     details.raw summary { cursor: pointer; }
+    /* Hide the native disclosure triangle/arrow on all expandable summaries. */
+    summary { list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    summary::marker { content: ""; }
     details.raw pre { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
       overflow:auto; font-size: 12px; max-height: 320px; color: var(--text); }
     .spinner { display:inline-block; width:14px; height:14px; border:2px solid #fff; border-top-color: transparent; border-radius:50%; animation: spin 0.7s linear infinite; vertical-align: middle; }

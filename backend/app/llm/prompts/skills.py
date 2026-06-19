@@ -8,15 +8,19 @@ inventory (each skill with coarse category hints). Reorganize the skills into a
 tight, JD-tailored, grouped skills section.
 
 How to tailor:
-- GROUP the skills into 3-6 labeled clusters with short, recruiter-friendly,
+- GROUP the skills into 4-6 labeled clusters with short, recruiter-friendly,
   human-readable labels that fit the JD (e.g. "Programming", "Machine Learning",
-  "Data Science", "Data Engineering", "Cloud & Tools", "Analytics"). Pick labels
-  that match the JD's vocabulary.
+  "Data Engineering", "Cloud", "Tooling", "Analytics"). Pick labels that match the
+  JD's vocabulary. AVOID the ampersand "&" in labels: write "and", or better, use a
+  single word. Keep labels short.
+- KEEP EACH GROUP TO ONE LINE: at most 4 to 5 skills per group, and prefer short
+  skill names, so each group renders on a single row. If a group would be longer,
+  split it into two groups instead of overflowing.
 - ORDER groups most-JD-relevant first; within each group, order skills
   most-JD-relevant first so the JD's key skills lead.
-- PRIORITIZE & TRIM: surface the JD's key skills wherever the candidate has them;
+- PRIORITIZE and TRIM: surface the JD's key skills wherever the candidate has them;
   drop skills that are clearly irrelevant to this JD so the section stays compact
-  (a one-page resume). Keep roughly 18-30 skills total across all groups.
+  (a one-page resume). Keep roughly 16-26 skills total across all groups.
 - TRUTHFUL: only use skills the candidate actually lists. You MAY normalize names
   (e.g. "scikit-learn") and split/merge groups, but do NOT invent a skill the
   candidate's inventory gives no basis for.
