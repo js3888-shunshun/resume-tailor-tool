@@ -7,17 +7,17 @@
   <style>
     /* ===== Claymorphism theme: bright colors, chunky rounded clay shadows ===== */
     :root {
-      --bg: #e8ebfb; --panel: #f3f5ff; --panel-2: #e3e7fb; --border: #d2d9f6;
-      --text: #3b4063; --muted: #8b91bd;
-      --accent: #8b7cf6; --accent-dk: #7560ee; --accent-soft: #e8e4fe; --accent-bd: #cdc4fd;
-      --pink: #f472b6; --yellow: #fbbf24; --green: #34d399; --blue: #5b9cf8;
+      --bg: #e4ecf8; --panel: #f2f7ff; --panel-2: #dceaf9; --border: #ccdcf2;
+      --text: #36476b; --muted: #818db5;
+      --accent: #54a8f6; --accent-dk: #2f8be9; --accent-soft: #e1f0fe; --accent-bd: #b8dcfb;
+      --pink: #f472b6; --pink-dk: #db2777; --pink-soft: #fde3f0; --yellow: #fbbf24; --green: #34d399; --blue: #5b9cf8;
       --hl: #b06a0c; --hl-bg: #fef0d2; --hl-bd: #f6d99a;
       --ok: #16a35a; --err: #ef476f; --teal: #14b3b3; --teal-soft: #d6f5f5;
       --radius: 24px;
-      --clay: 9px 9px 20px rgba(148,156,214,.5), -7px -7px 18px rgba(255,255,255,.92);
-      --clay-sm: 5px 5px 12px rgba(148,156,214,.45), -4px -4px 10px rgba(255,255,255,.9);
-      --clay-in: inset 4px 4px 9px rgba(148,156,214,.5), inset -4px -4px 9px rgba(255,255,255,.92);
-      --clay-accent: 0 8px 16px rgba(117,96,238,.42), inset 0 2px 6px rgba(255,255,255,.4), inset 0 -3px 8px rgba(0,0,0,.14);
+      --clay: 9px 9px 20px rgba(148,164,214,.5), -7px -7px 18px rgba(255,255,255,.92);
+      --clay-sm: 5px 5px 12px rgba(148,164,214,.45), -4px -4px 10px rgba(255,255,255,.9);
+      --clay-in: inset 4px 4px 9px rgba(148,164,214,.5), inset -4px -4px 9px rgba(255,255,255,.92);
+      --clay-accent: 0 8px 16px rgba(47,139,233,.42), inset 0 2px 6px rgba(255,255,255,.45), inset 0 -3px 8px rgba(0,0,0,.13);
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--text);
@@ -56,8 +56,8 @@
       border-radius: 16px; padding: 11px 20px; font-size: 14px; font-weight: 700; cursor: pointer;
       box-shadow: var(--clay-accent); transition: transform .14s ease, box-shadow .14s ease, filter .14s ease; }
     button:hover { transform: translateY(-2px); filter: brightness(1.06);
-      box-shadow: 0 12px 22px rgba(117,96,238,.5), inset 0 2px 6px rgba(255,255,255,.4), inset 0 -3px 8px rgba(0,0,0,.14); }
-    button:active { transform: translateY(1px); box-shadow: 0 4px 10px rgba(117,96,238,.4), inset 0 3px 8px rgba(0,0,0,.2); }
+      box-shadow: 0 12px 22px rgba(47,139,233,.5), inset 0 2px 6px rgba(255,255,255,.45), inset 0 -3px 8px rgba(0,0,0,.13); }
+    button:active { transform: translateY(1px); box-shadow: 0 4px 10px rgba(47,139,233,.4), inset 0 3px 8px rgba(0,0,0,.2); }
     button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
     button.secondary { background: var(--panel); color: var(--text); box-shadow: var(--clay-sm); }
     button.secondary:hover { filter: none; }
@@ -67,7 +67,7 @@
     .error { color: var(--err); font-size: 13px; margin-top: 12px; white-space: pre-wrap; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
-    .field-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-dk); margin: 0 0 8px; font-weight: 800; }
+    .field-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pink-dk); margin: 0 0 8px; font-weight: 800; }
     .big { font-size: 18px; font-weight: 700; }
     .chips { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
     .chip { background: var(--panel); border: 0; border-radius: 999px; padding: 4px 12px; font-size: 12px; box-shadow: var(--clay-sm); }
@@ -170,8 +170,8 @@
     .sel-kind:first-child { margin-top:0; }
     /* Step 4 polish CTA + before/after */
     .cta { display:flex; justify-content:space-between; align-items:center; gap:14px;
-      background:var(--accent-soft); border:0; border-radius:18px; padding:15px 18px; margin:16px 0 4px; box-shadow: var(--clay-sm); }
-    .cta b { color:var(--accent); }
+      background:var(--pink-soft); border:0; border-radius:18px; padding:15px 18px; margin:16px 0 4px; box-shadow: var(--clay-sm); }
+    .cta b { color:var(--pink-dk); }
     .cta button { white-space:nowrap; font-size:15px; padding:11px 20px; }
     .rw-entry { border:0; border-radius:16px; padding:14px 16px; margin-bottom:13px; background: var(--panel); box-shadow: var(--clay-sm); }
     .rw-title { font-weight:600; font-size:14px; margin-bottom:8px; }
