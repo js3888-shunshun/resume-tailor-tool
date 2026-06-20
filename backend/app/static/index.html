@@ -1061,7 +1061,12 @@ versions in production is required. Fast-paced startup environment.`;
           $('gen-resume-hint').innerHTML = data.resume.fit_status === 'overflow'
             ? `<span style="color:#b45309;">⚠ ${data.resume.pages} pages — trim a little</span>`
             : `<span style="color:#15803d;">✓ one page</span>`;
-        } else { $('gen-resume-pdf').style.display = 'none'; $('gen-resume-hint').textContent = 'no PDF (LaTeX engine missing)'; }
+        } else {
+          $('gen-resume-pdf').style.display = 'none';
+          $('gen-resume-hint').textContent = (data.resume && data.resume.engine)
+            ? 'PDF compile failed on the server — check the server logs.'
+            : 'PDF engine not available on the server (the deploy must use Docker).';
+        }
         // Cover pane
         if (data.cover && data.cover.pdf_available && data.cover.pdf_base64) {
           const u = pdfBlobUrl(data.cover.pdf_base64);
@@ -1071,7 +1076,9 @@ versions in production is required. Fast-paced startup environment.`;
             ? `<span style="color:#b45309;">⚠ ${data.cover.pages} pages</span>`
             : `<span style="color:#15803d;">✓ one page</span>`;
         } else if ($('gen-cover').checked) {
-          $('gen-cover-pdf').style.display = 'none'; $('gen-cover-hint').textContent = 'no PDF';
+          $('gen-cover-pdf').style.display = 'none';
+          $('gen-cover-hint').textContent = (data.cover && data.cover.engine)
+            ? 'PDF compile failed on the server.' : 'PDF engine not available on the server.';
         } else {
           $('gen-cover-pdf').style.display = 'none'; $('gen-cover-hint').textContent = 'skipped'; $('gen-cover-frame').removeAttribute('src');
         }
