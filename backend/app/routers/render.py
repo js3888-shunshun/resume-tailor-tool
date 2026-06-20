@@ -10,6 +10,7 @@ education / contact / titles / dates from the saved library, and returns the
 from __future__ import annotations
 
 from typing import List, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
@@ -18,7 +19,7 @@ from pydantic import BaseModel, Field
 from ..config import get_settings
 from ..latex_tools import detect_latex_engine
 from ..materials_store import load_materials
-from ..render.compile import try_compile
+from ..render.compile import pdf_to_base64, try_compile
 from ..render.fit import fit_to_one_page
 from ..render.latex import render_resume
 from ..schemas import (
@@ -52,11 +53,16 @@ class RenderRequest(BaseModel):
     projects_heading: str = "Research Experience"
     # Step 6: auto-tune spacing to land on exactly one page (needs an engine).
     fit_one_page: bool = True
+    # The user's library (client-supplied); server file/sample fallback when absent.
+    library: Optional[MaterialsLibrary] = None
 
 
 class RenderResult(BaseModel):
     tex: str
     pdf_available: bool = False
+    # The compiled PDF, base64-encoded, returned inline so the browser previews/
+    # downloads its OWN result (no shared server file -> safe for many users).
+    pdf_base64: Optional[str] = None
     engine: Optional[str] = None
     # Step 6 outcome: "fit" (landed on one page), "overflow" (too long even at
     # tightest spacing — trim manually), "no_engine", "error", or None if fit
@@ -150,36 +156,51 @@ def _build_document(req: RenderRequest, lib: MaterialsLibrary) -> ResumeDocument
     )
 
 
-@router.post("/render", response_model=RenderResult)
-def render(req: RenderRequest) -> RenderResult:
-    try:
-        lib = load_materials()
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"Could not load library: {e}")
-
+def build_render_result(req: RenderRequest, lib: MaterialsLibrary) -> RenderResult:
+    """Render (and best-effort compile) the resume. Shared by /render and /generate."""
     doc = _build_document(req, lib)
     settings = get_settings()
     engine = detect_latex_engine()
+    # Unique stem per request so concurrent users never share a PDF file.
+    stem = f"resume_{uuid4().hex}"
 
     if req.fit_one_page and engine:
-        fit = fit_to_one_page(doc, settings.output_dir, stem="resume")
+        fit = fit_to_one_page(doc, settings.output_dir, stem=stem)
+        pdf_path = settings.output_dir / f"{stem}.pdf"
+        b64 = pdf_to_base64(pdf_path) if fit.pdf_available else None
+        _cleanup(pdf_path)
         return RenderResult(
-            tex=fit.tex,
-            pdf_available=fit.pdf_available,
-            engine=engine.name,
-            fit_status=fit.status,
-            pages=fit.pages,
+            tex=fit.tex, pdf_available=fit.pdf_available, pdf_base64=b64,
+            engine=engine.name, fit_status=fit.status, pages=fit.pages,
         )
 
     # No fit requested (or no engine): single render/compile at default spacing.
     tex = render_resume(doc)
-    pdf_path = try_compile(tex, settings.output_dir, stem="resume") if engine else None
+    pdf_path = try_compile(tex, settings.output_dir, stem=stem) if engine else None
+    b64 = pdf_to_base64(pdf_path) if pdf_path else None
+    _cleanup(pdf_path)
     return RenderResult(
-        tex=tex,
-        pdf_available=pdf_path is not None,
+        tex=tex, pdf_available=pdf_path is not None, pdf_base64=b64,
         engine=engine.name if engine else None,
         fit_status="no_engine" if not engine else None,
     )
+
+
+def _cleanup(pdf_path) -> None:
+    try:
+        if pdf_path:
+            pdf_path.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+@router.post("/render", response_model=RenderResult)
+def render(req: RenderRequest) -> RenderResult:
+    try:
+        lib = req.library or load_materials()
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Could not load library: {e}")
+    return build_render_result(req, lib)
 
 
 @router.get("/render/pdf", include_in_schema=True)

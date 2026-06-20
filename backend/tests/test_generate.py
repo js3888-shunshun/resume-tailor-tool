@@ -28,25 +28,25 @@ def _wire(monkeypatch):
     lib = MaterialsLibrary(personal_info=PersonalInfo(name="Joy", email="j@x.com", phone="1"))
 
     captured = {}
-    monkeypatch.setattr(gen, "analyze_jd", lambda t: profile)
+    monkeypatch.setattr(gen, "analyze_jd", lambda t, client=None: profile)
     monkeypatch.setattr(gen, "load_materials", lambda: lib)
     monkeypatch.setattr(gen, "select_experiences", lambda p, l, **k: selection)
     monkeypatch.setattr(gen, "rewrite_selected", lambda *a, **k: (exps, projs))
     monkeypatch.setattr(gen, "tailor_skills", lambda *a, **k: groups)
 
-    def fake_render(req):
+    def fake_render(req, lib):
         captured["render"] = req
         return RenderResult(tex="RESUME", pdf_available=True, engine="tectonic",
                             fit_status="fit", pages=1)
 
-    def fake_cover(req):
+    def fake_cover(req, lib, client):
         captured["cover"] = req
         return CoverLetterResult(tex="COVER", salutation="Dear Hiring Manager,",
                                  paragraphs=["p"], closing="Sincerely,",
                                  pdf_available=True, engine="tectonic", pages=1)
 
-    monkeypatch.setattr(gen, "render_endpoint", fake_render)
-    monkeypatch.setattr(gen, "cover_endpoint", fake_cover)
+    monkeypatch.setattr(gen, "build_render_result", fake_render)
+    monkeypatch.setattr(gen, "build_cover_result", fake_cover)
     return profile, exps, groups, captured
 
 

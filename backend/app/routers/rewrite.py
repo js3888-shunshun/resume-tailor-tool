@@ -9,10 +9,11 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from ..llm import LLMError
+from ..deps import make_client
+from ..llm import LLMClient, LLMError
 from ..materials_store import load_materials
 from ..pipeline.step4_rewrite import rewrite_selected
 from ..pipeline.step4_skills import tailor_skills
@@ -25,6 +26,8 @@ class RewriteRequest(BaseModel):
     jd_profile: JDProfile
     selected_experiences: List[SelectedExperience] = Field(default_factory=list)
     selected_projects: List[SelectedExperience] = Field(default_factory=list)
+    # The user's library (client-supplied), for title context + skills tailoring.
+    library: Optional[MaterialsLibrary] = None
     # Also regroup & JD-tailor the skills section (Polish step does both).
     tailor_skills: bool = True
 
@@ -48,21 +51,24 @@ def _title_context(lib: Optional[MaterialsLibrary]) -> dict:
 
 
 @router.post("/rewrite", response_model=RewriteResult)
-def rewrite(req: RewriteRequest) -> RewriteResult:
-    try:
-        lib = load_materials()
-    except Exception:  # noqa: BLE001
-        lib = None
+def rewrite(req: RewriteRequest, client: LLMClient = Depends(make_client)) -> RewriteResult:
+    lib = req.library
+    if lib is None:
+        try:
+            lib = load_materials()
+        except Exception:  # noqa: BLE001
+            lib = None
     try:
         exps, projs = rewrite_selected(
             req.jd_profile,
             req.selected_experiences,
             req.selected_projects,
             context=_title_context(lib),
+            client=client,
         )
         groups: List[SkillGroup] = []
         if req.tailor_skills and lib is not None:
-            groups = tailor_skills(req.jd_profile, lib)
+            groups = tailor_skills(req.jd_profile, lib, client=client)
     except LLMError as e:
         raise HTTPException(status_code=503, detail=str(e))
     return RewriteResult(selected_experiences=exps, selected_projects=projs, skill_groups=groups)

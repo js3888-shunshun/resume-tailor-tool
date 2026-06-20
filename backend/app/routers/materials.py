@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import ValidationError
 
 from ..config import get_settings
-from ..llm import LLMError
+from ..deps import make_client
+from ..llm import LLMClient, LLMError
 from ..materials_merge import merge_libraries
 from ..materials_store import load_materials, save_materials
 from ..pipeline.ingest import decompose_resume
@@ -37,6 +38,7 @@ async def ingest_resume(
     resume_text: str = Form(default=""),
     mode: str = Form(default="replace"),  # "replace" | "append"
     base_library: str = Form(default=""),  # JSON of the library to append into
+    client: LLMClient = Depends(make_client),
 ) -> MaterialsLibrary:
     """Decompose an uploaded resume (file and/or pasted text) into a library.
 
@@ -58,7 +60,7 @@ async def ingest_resume(
         raise HTTPException(status_code=422, detail="No resume text provided.")
 
     try:
-        parsed = decompose_resume(text)
+        parsed = decompose_resume(text, client=client)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except LLMError as e:

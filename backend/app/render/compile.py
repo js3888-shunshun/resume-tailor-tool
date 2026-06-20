@@ -61,6 +61,15 @@ def compile_tex(tex: str, out_dir: Path, stem: str = "resume") -> Path:
         return final
 
 
+def pdf_to_base64(pdf: Optional[Path]) -> Optional[str]:
+    """Read a compiled PDF and base64-encode it for inline transport, or None."""
+    import base64
+
+    if not pdf or not Path(pdf).exists():
+        return None
+    return base64.b64encode(Path(pdf).read_bytes()).decode("ascii")
+
+
 def count_pages(pdf: Path) -> Optional[int]:
     """Page count of a compiled PDF, or None if it can't be read."""
     try:

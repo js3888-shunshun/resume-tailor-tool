@@ -18,13 +18,16 @@ from ..pipeline.step3_selection import (
     DEFAULT_TARGET_PROJECTS,
     select_experiences,
 )
-from ..schemas import JDProfile, SelectionResult
+from ..schemas import JDProfile, MaterialsLibrary, SelectionResult
 
 router = APIRouter(tags=["selection"])
 
 
 class SelectRequest(BaseModel):
     jd_profile: JDProfile
+    # The user's library, supplied by the client (browser-stored). Falls back to
+    # the server's saved/sample library when absent (local/dev).
+    library: Optional[MaterialsLibrary] = None
     # Number of whole experiences / projects (sections) to keep.
     target_experiences: int = Field(default=DEFAULT_TARGET_EXPERIENCES, ge=0, le=15)
     target_projects: int = Field(default=DEFAULT_TARGET_PROJECTS, ge=0, le=15)
@@ -33,7 +36,7 @@ class SelectRequest(BaseModel):
 @router.post("/select", response_model=SelectionResult)
 def select(req: SelectRequest) -> SelectionResult:
     try:
-        library = load_materials()
+        library = req.library or load_materials()
     except (FileNotFoundError, ValueError) as e:
         raise HTTPException(status_code=500, detail=f"Failed to load materials: {e}")
     return select_experiences(

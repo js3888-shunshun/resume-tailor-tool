@@ -84,8 +84,7 @@ def test_binary_search_fills_without_overflow(monkeypatch, tmp_path):
 
 def test_probe_file_is_cleaned_up(monkeypatch, tmp_path):
     _install_fake_engine(monkeypatch, threshold=1.10)
-    # The fake compile doesn't actually write files, but create a probe to ensure
-    # cleanup removes it without error when present.
-    (tmp_path / "_fit_probe.pdf").write_bytes(b"%PDF-1.4")
+    # The probe stem is derived from the (default) stem; cleanup must remove it.
+    (tmp_path / "_probe_resume.pdf").write_bytes(b"%PDF-1.4")
     fit.fit_to_one_page(DOC, tmp_path)
-    assert not (tmp_path / "_fit_probe.pdf").exists()
+    assert not (tmp_path / "_probe_resume.pdf").exists()

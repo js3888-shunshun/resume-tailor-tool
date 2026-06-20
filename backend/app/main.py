@@ -9,11 +9,13 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse
 
 from .config import get_settings
+from .deps import require_auth
 from .latex_tools import INSTALL_HINT, detect_latex_engine
+from .routers import auth as auth_router
 from .routers import cover_letter as cover_letter_router
 from .routers import generate as generate_router
 from .routers import jd as jd_router
@@ -28,13 +30,17 @@ logger = logging.getLogger("resume_tailor")
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 app = FastAPI(title="AI Resume Tailor", version="0.1.0")
-app.include_router(jd_router.router)
-app.include_router(selection_router.router)
-app.include_router(materials_router.router)
-app.include_router(rewrite_router.router)
-app.include_router(render_router.router)
-app.include_router(cover_letter_router.router)
-app.include_router(generate_router.router)
+
+# Login routes are open; everything else is gated behind the shared login.
+app.include_router(auth_router.router)
+_auth = [Depends(require_auth)]
+app.include_router(jd_router.router, dependencies=_auth)
+app.include_router(selection_router.router, dependencies=_auth)
+app.include_router(materials_router.router, dependencies=_auth)
+app.include_router(rewrite_router.router, dependencies=_auth)
+app.include_router(render_router.router, dependencies=_auth)
+app.include_router(cover_letter_router.router, dependencies=_auth)
+app.include_router(generate_router.router, dependencies=_auth)
 
 
 @app.get("/", include_in_schema=False)

@@ -23,6 +23,11 @@ class Settings:
     # Default to the latest capable model; override via env if needed.
     model: str = os.getenv("RESUME_TAILOR_MODEL", "claude-opus-4-8")
 
+    # Simple shared login for the deployed app. When APP_PASSWORD is unset, auth
+    # is disabled (local/dev). APP_USERNAME is optional (any user if blank).
+    app_username: str = os.getenv("APP_USERNAME", "")
+    app_password: str = os.getenv("APP_PASSWORD", "")
+
     data_dir: Path = Path(os.getenv("RESUME_TAILOR_DATA_DIR", str(BACKEND_ROOT / "data")))
     materials_path: Path = Path(
         os.getenv("RESUME_TAILOR_MATERIALS", str(BACKEND_ROOT / "data" / "materials.json"))

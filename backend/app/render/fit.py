@@ -27,8 +27,6 @@ from .layout import DEFAULT, layout_for
 
 log = logging.getLogger("resume_tailor.step6")
 
-_PROBE_STEM = "_fit_probe"
-
 
 @dataclass
 class FitResult:
@@ -53,13 +51,16 @@ def fit_to_one_page(
         # No engine: just hand back the default-spacing .tex, no PDF.
         return FitResult(render_resume(doc, DEFAULT), 0, 0.0, "no_engine", False)
 
+    # Per-call probe stem so concurrent requests never clobber each other's files.
+    probe_stem = f"_probe_{stem}"
+
     def measure(tex: str) -> Optional[int]:
-        pdf = try_compile(tex, out_dir, stem=_PROBE_STEM)
+        pdf = try_compile(tex, out_dir, stem=probe_stem)
         return count_pages(pdf) if pdf else None
 
     def finalize(tex: str, pages: int, scale: float, status: str) -> FitResult:
         pdf = try_compile(tex, out_dir, stem=stem)
-        _cleanup_probe(out_dir)
+        _cleanup_probe(out_dir, probe_stem)
         return FitResult(tex, pages, scale, status, pdf is not None)
 
     # 1) Tightest — can the content fit one page at all?
@@ -93,8 +94,8 @@ def fit_to_one_page(
     return finalize(best_tex, 1, best_scale, "fit")
 
 
-def _cleanup_probe(out_dir: Path) -> None:
+def _cleanup_probe(out_dir: Path, probe_stem: str) -> None:
     try:
-        (out_dir / f"{_PROBE_STEM}.pdf").unlink(missing_ok=True)
+        (out_dir / f"{probe_stem}.pdf").unlink(missing_ok=True)
     except OSError:
         pass

@@ -9,20 +9,24 @@ from __future__ import annotations
 
 from datetime import date
 from typing import List, Optional
+from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from ..config import get_settings
+from ..deps import make_client
 from ..latex_tools import detect_latex_engine
+from ..llm import LLMClient
 from ..materials_store import load_materials
 from ..pipeline.step7_cover_letter import generate_cover_letter
-from ..render.compile import count_pages, try_compile
+from ..render.compile import count_pages, pdf_to_base64, try_compile
 from ..render.cover_letter import render_cover_letter
 from ..schemas import (
     CoverLetterDocument,
     JDProfile,
+    MaterialsLibrary,
     RenderContact,
     SelectedExperience,
 )
@@ -35,6 +39,8 @@ class CoverLetterRequest(BaseModel):
     # Optional finalized selection to ground the letter in tailored content.
     selected_experiences: List[SelectedExperience] = Field(default_factory=list)
     selected_projects: List[SelectedExperience] = Field(default_factory=list)
+    # The user's library (client-supplied); server file/sample fallback when absent.
+    library: Optional[MaterialsLibrary] = None
     # Raw JD text + the candidate's company research, used for the "Why this
     # company" paragraph (grounded, not fabricated).
     jd_text: str = ""
@@ -50,23 +56,21 @@ class CoverLetterResult(BaseModel):
     paragraphs: List[str]
     closing: str
     pdf_available: bool = False
+    pdf_base64: Optional[str] = None  # inline PDF (no shared file -> multi-user safe)
     engine: Optional[str] = None
     pages: Optional[int] = None
 
 
-@router.post("/cover-letter", response_model=CoverLetterResult)
-def cover_letter(req: CoverLetterRequest) -> CoverLetterResult:
-    try:
-        lib = load_materials()
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"Could not load library: {e}")
-
+def build_cover_result(req: CoverLetterRequest, lib: MaterialsLibrary,
+                       client: LLMClient) -> CoverLetterResult:
+    """Generate + compile the cover letter. Shared by /cover-letter and /generate."""
     parts = generate_cover_letter(
         req.jd_profile, lib,
         selected_experiences=req.selected_experiences,
         selected_projects=req.selected_projects,
         jd_text=req.jd_text,
         company_notes=req.company_notes,
+        client=client,
     )
 
     pi = lib.personal_info
@@ -89,16 +93,35 @@ def cover_letter(req: CoverLetterRequest) -> CoverLetterResult:
 
     settings = get_settings()
     engine = detect_latex_engine()
-    pdf = try_compile(tex, settings.output_dir, stem="cover_letter") if engine else None
+    # Unique stem per request so concurrent users never share a PDF file.
+    pdf = try_compile(tex, settings.output_dir, stem=f"cover_{uuid4().hex}") if engine else None
+    b64 = pdf_to_base64(pdf) if pdf else None
+    pages = count_pages(pdf) if pdf else None
+    if pdf:
+        try:
+            pdf.unlink(missing_ok=True)
+        except OSError:
+            pass
     return CoverLetterResult(
         tex=tex,
         salutation=salutation,
         paragraphs=doc.paragraphs,
         closing=doc.closing,
         pdf_available=pdf is not None,
+        pdf_base64=b64,
         engine=engine.name if engine else None,
-        pages=count_pages(pdf) if pdf else None,
+        pages=pages,
     )
+
+
+@router.post("/cover-letter", response_model=CoverLetterResult)
+def cover_letter(req: CoverLetterRequest,
+                 client: LLMClient = Depends(make_client)) -> CoverLetterResult:
+    try:
+        lib = req.library or load_materials()
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Could not load library: {e}")
+    return build_cover_result(req, lib, client)
 
 
 @router.get("/cover-letter/pdf", include_in_schema=True)

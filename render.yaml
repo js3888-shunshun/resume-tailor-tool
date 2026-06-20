@@ -1,0 +1,18 @@
+# Render Blueprint — deploy with: New + > Blueprint, point at this repo.
+services:
+  - type: web
+    name: ai-resume-tailor
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # Your Anthropic key — all logged-in users' generations bill to it.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Shared login. Anyone with these can use the site.
+      - key: APP_USERNAME
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"

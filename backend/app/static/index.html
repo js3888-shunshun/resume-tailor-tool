@@ -214,9 +214,32 @@
     .rw-orig ul { margin:6px 0 0; padding-left:18px; }
     .rw-orig li { color:var(--muted); font-size:12px; margin-bottom:3px; }
     .final-bar { display:flex; align-items:center; gap:12px; margin-top:6px; padding-top:12px; border-top:1px solid var(--border); }
+    /* login overlay */
+    .login-overlay { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(135deg, #dcefff 0%, #eae2ff 32%, #ffe4f2 64%, #fff5dc 100%); }
+    .login-card { background: rgba(255,255,255,.66); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border:1px solid rgba(255,255,255,.6); border-radius: 26px; padding: 34px 30px; width: 340px;
+      box-shadow: var(--clay); text-align:center; }
+    .login-card h2 { margin:0 0 4px; color:var(--text); font-size:22px; }
+    .login-card .sub { color:var(--muted); font-size:13px; margin-bottom:22px; }
+    .login-card input { width:100%; margin-bottom:12px; background:var(--bg); border:0; border-radius:13px;
+      padding:12px 15px; font-size:15px; box-shadow: var(--clay-in); box-sizing:border-box;
+      font-family:"Times New Roman", Times, serif; }
+    .login-card button { width:100%; margin-top:4px; }
+    .login-err { color:var(--err); font-size:12px; min-height:16px; margin-top:10px; }
   </style>
 </head>
 <body>
+  <div class="login-overlay" id="login-overlay" style="display:none;">
+    <div class="login-card">
+      <h2>AI Resume Tailor</h2>
+      <div class="sub">Sign in to continue</div>
+      <input id="login-user" type="text" placeholder="Username" autocomplete="username">
+      <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password">
+      <button id="login-btn">Sign in</button>
+      <div class="login-err" id="login-err"></div>
+    </div>
+  </div>
   <div class="app">
     <nav class="sidebar">
       <div class="brand">AI Resume Tailor<small>tailor resumes to a JD</small></div>
@@ -648,22 +671,23 @@ versions in production is required. Fast-paced startup environment.`;
       } catch (e) { $('lib-error').textContent = 'Request failed: ' + e.message; }
       finally { btn.disabled = false; btn.textContent = label; }
     }
+    // The library lives in THIS browser (private to you). Saving stores it locally.
     async function saveLibrary() {
       if (!LIBRARY) return;
-      renumber(LIBRARY); renderLibrary();
-      const btn = $('saveLibBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving…';
+      renumber(LIBRARY); renderLibrary(); buildMaterialsMap();
       try {
-        const r = await fetch('/materials', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(LIBRARY) });
-        const data = await r.json();
-        if (!r.ok) { $('lib-error').textContent = `Save error: ${data.detail || JSON.stringify(data)}`; return; }
-        $('save-hint').textContent = 'Saved. Tailoring now uses your library.';
-        await refreshStatus();
-      } catch (e) { $('lib-error').textContent = 'Request failed: ' + e.message; }
-      finally { btn.textContent = 'Save'; btn.disabled = false; }
+        localStorage.setItem('rt_library', JSON.stringify(LIBRARY));
+        $('save-hint').textContent = 'Saved to this browser.';
+      } catch (e) { $('lib-error').textContent = 'Save failed: ' + e.message; }
     }
     async function loadExistingLibrary(health) {
+      const stored = localStorage.getItem('rt_library');
+      if (stored) {
+        try { LIBRARY = JSON.parse(stored); LIB_VIEW = 'compact'; renderLibrary(); buildMaterialsMap();
+          $('lib-hint').textContent = 'Loaded from this browser.'; return; } catch (e) {}
+      }
       if (health && health.materials_source === 'user') {
-        try { LIBRARY = await (await fetch('/materials')).json(); LIB_VIEW = 'compact'; renderLibrary(); $('lib-hint').textContent = 'Loaded your saved library.'; } catch (e) {}
+        try { LIBRARY = await (await fetch('/materials')).json(); LIB_VIEW = 'compact'; renderLibrary(); buildMaterialsMap(); } catch (e) {}
       }
     }
 
@@ -683,10 +707,11 @@ versions in production is required. Fast-paced startup environment.`;
       $('r-raw').textContent = JSON.stringify(p, null, 2); $('result').style.display = 'block';
     }
     let MATERIALS_MAP = {};
-    async function loadMaterialsMap() {
-      try { const m = await (await fetch('/materials')).json(); MATERIALS_MAP = {};
-        (m.experiences || []).forEach((e) => { MATERIALS_MAP[e.id] = { title: e.title, org: e.organization, kind: 'Experience' }; });
-        (m.projects || []).forEach((p) => { MATERIALS_MAP[p.id] = { title: p.title, org: '', kind: 'Project' }; }); } catch (e) {}
+    function buildMaterialsMap() {
+      MATERIALS_MAP = {};
+      if (!LIBRARY) return;
+      (LIBRARY.experiences || []).forEach((e) => { MATERIALS_MAP[e.id] = { title: e.title, org: e.organization, kind: 'Experience' }; });
+      (LIBRARY.projects || []).forEach((p) => { MATERIALS_MAP[p.id] = { title: p.title, org: '', kind: 'Project' }; });
     }
     // Working selection the user can edit (add / remove), plus all ranked candidates.
     let RANKED = { experiences: [], projects: [] };
@@ -756,7 +781,7 @@ versions in production is required. Fast-paced startup environment.`;
       const btn = $('polishBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Polishing…';
       try {
         const r = await fetch('/rewrite', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jd_profile: LAST_PROFILE, selected_experiences: WORKING.experiences, selected_projects: WORKING.projects }) });
+          body: JSON.stringify({ jd_profile: LAST_PROFILE, library: LIBRARY, selected_experiences: WORKING.experiences, selected_projects: WORKING.projects }) });
         const data = await r.json();
         if (!r.ok) { $('error').textContent = `Rewrite error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         FINAL_DRAFT = null; $('final-hint').textContent = 'Preview below. Click Edit to revise, then Finalize for the PDF (next step).';
@@ -877,6 +902,7 @@ versions in production is required. Fast-paced startup environment.`;
       btn.innerHTML = '<span class="spinner"></span> ' + (fit ? 'Fitting to one page…' : 'Rendering…');
       try {
         const body = {
+          library: LIBRARY,
           selected_experiences: FINAL_DRAFT.selected_experiences || [],
           selected_projects: FINAL_DRAFT.selected_projects || [],
           skill_groups: FINAL_DRAFT.skill_groups || [],
@@ -889,12 +915,9 @@ versions in production is required. Fast-paced startup environment.`;
         const data = await r.json();
         if (!r.ok) { $('render-hint').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         LAST_TEX = data.tex; $('tex-out').textContent = data.tex; $('texDownloadBtn').disabled = false;
-        if (data.pdf_available) {
-          $('pdfLink').style.display = 'inline-block';
-          const url = '/render/pdf?t=' + Date.now();  // cache-bust so the new PDF shows
-          $('pdfLink').href = url;
-          // Safe download: validate it's really a PDF before saving (Resume_<Company>_<Role>.pdf).
-          $('pdfLink').onclick = (ev) => { ev.preventDefault(); savePdf('/render/pdf?t=' + Date.now(), docBaseName() + '.pdf', $('render-hint')); };
+        if (data.pdf_available && data.pdf_base64) {
+          const url = pdfBlobUrl(data.pdf_base64);  // this user's own PDF, inline
+          const a = $('pdfLink'); a.style.display = 'inline-block'; a.href = url; a.download = docBaseName() + '.pdf'; a.onclick = null;
           $('pdf-frame').src = url; $('pdf-preview').style.display = 'block';
           const h = $('render-hint');
           if (data.fit_status === 'overflow') {
@@ -914,6 +937,12 @@ versions in production is required. Fast-paced startup environment.`;
     // Build a download base name like "Resume_Acme_ML_Engineer" from the JD profile.
     function sanitizeFilePart(s) {
       return (s || '').trim().replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+    }
+    // Turn a base64 PDF (returned inline by the API) into a blob URL for preview/download.
+    function pdfBlobUrl(b64) {
+      const bin = atob(b64); const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return URL.createObjectURL(new Blob([arr], { type: 'application/pdf' }));
     }
     // Download a PDF the SAFE way: fetch it, verify the bytes really are a PDF
     // (a "%PDF-" header), then save. This guarantees we never save a JSON error
@@ -956,6 +985,7 @@ versions in production is required. Fast-paced startup environment.`;
       try {
         const body = {
           jd_profile: LAST_PROFILE,
+          library: LIBRARY,
           selected_experiences: (FINAL_DRAFT && FINAL_DRAFT.selected_experiences) || (WORKING && WORKING.experiences) || [],
           selected_projects: (FINAL_DRAFT && FINAL_DRAFT.selected_projects) || (WORKING && WORKING.projects) || [],
           jd_text: ($('jd') && $('jd').value || '').trim(),
@@ -967,11 +997,9 @@ versions in production is required. Fast-paced startup environment.`;
         const data = await r.json();
         if (!r.ok) { $('cover-hint').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         LAST_COVER_TEX = data.tex; $('cover-tex-out').textContent = data.tex; $('coverTexBtn').disabled = false;
-        if (data.pdf_available) {
-          $('coverPdfLink').style.display = 'inline-block';
-          const url = '/cover-letter/pdf?t=' + Date.now();
-          $('coverPdfLink').href = url;
-          $('coverPdfLink').onclick = (ev) => { ev.preventDefault(); savePdf('/cover-letter/pdf?t=' + Date.now(), coverBaseName() + '.pdf', $('cover-hint')); };
+        if (data.pdf_available && data.pdf_base64) {
+          const url = pdfBlobUrl(data.pdf_base64);
+          const a = $('coverPdfLink'); a.style.display = 'inline-block'; a.href = url; a.download = coverBaseName() + '.pdf'; a.onclick = null;
           $('cover-frame').src = url; $('cover-preview').style.display = 'block';
           const over = data.pages && data.pages > 1;
           $('cover-hint').innerHTML = over
@@ -1001,12 +1029,14 @@ versions in production is required. Fast-paced startup environment.`;
     async function generateAll() {
       const jd = $('gen-jd').value.trim();
       if (!jd) { $('gen-hint').textContent = 'Paste a job description first.'; return; }
+      if (!LIBRARY) { $('gen-hint').textContent = 'Add your resume in the Material Library tab first.'; return; }
       const btn = $('gen-btn'); btn.disabled = true; const old = btn.textContent;
       btn.innerHTML = '<span class="spinner"></span> Generating… (several steps, ~20–40s)';
       $('gen-hint').textContent = '';
       try {
         const body = {
           jd_text: jd,
+          library: LIBRARY,
           target_experiences: parseInt($('gen-exp').value, 10) || 0,
           target_projects: parseInt($('gen-proj').value, 10) || 0,
           highlight: $('gen-hl').checked,
@@ -1024,21 +1054,19 @@ versions in production is required. Fast-paced startup environment.`;
         $('gen-summary').innerHTML = `<b>${data.profile.job_title} @ ${data.profile.company}</b> — picked ${nexp} experience(s), ${nproj} project(s), ${(data.skill_groups || []).length} skill group(s).`;
         $('gen-results').style.display = 'grid';
         // Resume pane
-        if (data.resume && data.resume.pdf_available) {
-          const u = '/render/pdf?t=' + Date.now();
+        if (data.resume && data.resume.pdf_available && data.resume.pdf_base64) {
+          const u = pdfBlobUrl(data.resume.pdf_base64);
           $('gen-resume-frame').src = u;
-          const a = $('gen-resume-pdf'); a.href = u; a.style.display = 'inline-block';
-          a.onclick = (ev) => { ev.preventDefault(); savePdf('/render/pdf?t=' + Date.now(), docBaseName() + '.pdf', $('gen-resume-hint')); };
+          const a = $('gen-resume-pdf'); a.href = u; a.download = docBaseName() + '.pdf'; a.style.display = 'inline-block'; a.onclick = null;
           $('gen-resume-hint').innerHTML = data.resume.fit_status === 'overflow'
             ? `<span style="color:#b45309;">⚠ ${data.resume.pages} pages — trim a little</span>`
             : `<span style="color:#15803d;">✓ one page</span>`;
         } else { $('gen-resume-pdf').style.display = 'none'; $('gen-resume-hint').textContent = 'no PDF (LaTeX engine missing)'; }
         // Cover pane
-        if (data.cover && data.cover.pdf_available) {
-          const u = '/cover-letter/pdf?t=' + Date.now();
+        if (data.cover && data.cover.pdf_available && data.cover.pdf_base64) {
+          const u = pdfBlobUrl(data.cover.pdf_base64);
           $('gen-cover-frame').src = u;
-          const a = $('gen-cover-pdf'); a.href = u; a.style.display = 'inline-block';
-          a.onclick = (ev) => { ev.preventDefault(); savePdf('/cover-letter/pdf?t=' + Date.now(), coverBaseName() + '.pdf', $('gen-cover-hint')); };
+          const a = $('gen-cover-pdf'); a.href = u; a.download = coverBaseName() + '.pdf'; a.style.display = 'inline-block'; a.onclick = null;
           $('gen-cover-hint').innerHTML = (data.cover.pages > 1)
             ? `<span style="color:#b45309;">⚠ ${data.cover.pages} pages</span>`
             : `<span style="color:#15803d;">✓ one page</span>`;
@@ -1053,16 +1081,17 @@ versions in production is required. Fast-paced startup environment.`;
     async function analyze() {
       const jd = $('jd').value.trim(); $('error').textContent = '';
       if (!jd) { $('error').textContent = 'Please paste a job description first.'; return; }
+      if (!LIBRARY) { $('error').textContent = 'Add your resume in the Material Library tab first.'; return; }
       const btn = $('analyzeBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Working…';
       $('result').style.display = 'none'; $('selection').style.display = 'none';
       try {
         const r = await fetch('/jd/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jd_text: jd }) });
         const profile = await r.json();
         if (!r.ok) { $('error').textContent = `Error ${r.status}: ${profile.detail || JSON.stringify(profile)}`; return; }
-        renderResult(profile); await loadMaterialsMap();
+        renderResult(profile); buildMaterialsMap();
         const tExp = parseInt($('targetExp').value, 10); const tProj = parseInt($('targetProj').value, 10);
         const sr = await fetch('/select', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jd_profile: profile, target_experiences: isNaN(tExp) ? 4 : tExp, target_projects: isNaN(tProj) ? 2 : tProj }) });
+          body: JSON.stringify({ jd_profile: profile, library: LIBRARY, target_experiences: isNaN(tExp) ? 4 : tExp, target_projects: isNaN(tProj) ? 2 : tProj }) });
         const sel = await sr.json();
         if (!sr.ok) { $('error').textContent = `Selection error ${sr.status}: ${sel.detail || JSON.stringify(sel)}`; return; }
         renderSelection(sel);
@@ -1084,7 +1113,34 @@ versions in production is required. Fast-paced startup environment.`;
     $('gen-btn').addEventListener('click', generateAll);
     $('rwToggleBtn').addEventListener('click', () => { if (!REWRITE_DRAFT) return; RW_VIEW = RW_VIEW === 'edit' ? 'preview' : 'edit'; renderRewrite(REWRITE_DRAFT); });
     $('sampleBtn').addEventListener('click', () => { $('jd').value = SAMPLE_JD; });
-    (async () => { const health = await refreshStatus(); await loadMaterialsMap(); await loadExistingLibrary(health); })();
+
+    // ===== login + boot =====
+    async function doLogin() {
+      $('login-err').textContent = '';
+      const btn = $('login-btn'); btn.disabled = true; const old = btn.textContent; btn.innerHTML = '<span class="spinner"></span>';
+      try {
+        const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: $('login-user').value, password: $('login-pass').value }) });
+        if (!r.ok) { const d = await r.json().catch(() => ({})); $('login-err').textContent = d.detail || 'Sign-in failed'; return; }
+        $('login-overlay').style.display = 'none';
+        await initApp();
+      } catch (e) { $('login-err').textContent = 'Request failed: ' + e.message; }
+      finally { btn.disabled = false; btn.textContent = old; }
+    }
+    $('login-btn').addEventListener('click', doLogin);
+    $('login-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+    $('login-user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('login-pass').focus(); });
+
+    async function initApp() {
+      const health = await refreshStatus();
+      await loadExistingLibrary(health);
+    }
+    (async () => {
+      let auth = { auth_required: false, signed_in: true };
+      try { auth = await (await fetch('/api/auth')).json(); } catch (e) {}
+      if (auth.auth_required && !auth.signed_in) { $('login-overlay').style.display = 'flex'; $('login-user').focus(); }
+      else { await initApp(); }
+    })();
   </script>
 </body>
 </html>

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..llm import LLMError
+from ..deps import make_client
+from ..llm import LLMClient, LLMError
 from ..pipeline.step2_jd_analysis import analyze_jd
 from ..schemas import JDProfile
 
@@ -17,9 +18,9 @@ class JDAnalyzeRequest(BaseModel):
 
 
 @router.post("/analyze", response_model=JDProfile)
-def analyze(req: JDAnalyzeRequest) -> JDProfile:
+def analyze(req: JDAnalyzeRequest, client: LLMClient = Depends(make_client)) -> JDProfile:
     try:
-        return analyze_jd(req.jd_text)
+        return analyze_jd(req.jd_text, client=client)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except LLMError as e:

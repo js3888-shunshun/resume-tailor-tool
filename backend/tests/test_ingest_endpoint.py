@@ -32,7 +32,7 @@ def test_append_accumulates_via_base_library(monkeypatch):
     client = TestClient(app)
 
     # First append: base = library with experience A, new parse = experience B.
-    monkeypatch.setattr(mat, "decompose_resume", lambda text, c=None: _lib_with("B", "Beta", "b-bullet"))
+    monkeypatch.setattr(mat, "decompose_resume", lambda text, client=None: _lib_with("B", "Beta", "b-bullet"))
     base_a = _lib_with("A", "Alpha", "a-bullet").model_dump(mode="json")
     r1 = client.post("/materials/ingest", data={
         "resume_text": "exp B text", "mode": "append", "base_library": json.dumps(base_a),
@@ -42,7 +42,7 @@ def test_append_accumulates_via_base_library(monkeypatch):
     assert {e["title"] for e in merged1["experiences"]} == {"A", "B"}
 
     # Second append: feed merged1 back as base, new parse = experience C.
-    monkeypatch.setattr(mat, "decompose_resume", lambda text, c=None: _lib_with("C", "Gamma", "c-bullet"))
+    monkeypatch.setattr(mat, "decompose_resume", lambda text, client=None: _lib_with("C", "Gamma", "c-bullet"))
     r2 = client.post("/materials/ingest", data={
         "resume_text": "exp C text", "mode": "append", "base_library": json.dumps(merged1),
     })

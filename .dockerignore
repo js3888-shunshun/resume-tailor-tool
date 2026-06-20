@@ -1,0 +1,15 @@
+.git/
+.venv/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+# Secrets and personal data must NOT go into the image
+.env
+backend/data/materials.json
+# Windows-only bundled tectonic (the image installs the Linux build)
+backend/tools/
+# Runtime artifacts
+backend/output/
+# Docs / misc not needed at runtime
+*.md
+node_modules/
