@@ -17,8 +17,7 @@ class RenderContact(BaseModel):
     name: str
     email: str = ""
     phone: str = ""
-    location: str = ""
-    current_address: str = ""  # shown on its own line under the contact info
+    location: str = ""  # shown on its own line under the contact info
     links: List[str] = Field(default_factory=list)
 
 

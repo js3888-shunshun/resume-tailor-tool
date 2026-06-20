@@ -27,9 +27,8 @@ class PersonalInfo(BaseModel):
     name: str
     email: str
     phone: str
+    # Current location/address, shown on its own line under the resume contact info.
     location: str = ""
-    # Current address, shown on its own line under the resume contact info.
-    current_address: str = ""
     links: List[str] = Field(default_factory=list)
 
 

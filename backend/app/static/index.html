@@ -475,6 +475,7 @@ versions in production is required. Fast-paced startup environment.`;
       c.appendChild(h('div', { class: 'lv-name' }, pi.name || 'Your Name'));
       const contact = [pi.email, pi.phone, ...(pi.links || [])].filter(Boolean).join('   ·   ');
       if (contact) c.appendChild(h('div', { class: 'lv-contact' }, contact));
+      if (pi.location) c.appendChild(h('div', { class: 'lv-contact' }, pi.location));
       if ((LIBRARY.education || []).length) {
         c.appendChild(lvSection('Education'));
         LIBRARY.education.forEach((e) => c.appendChild(h('div', { class: 'lv-entry' },
@@ -565,7 +566,7 @@ versions in production is required. Fast-paced startup environment.`;
         h('span', { class: untag ? 'warn' : 'okk' }, `${untag} untagged`), ` · ${(LIBRARY.skills || []).length} skills`));
       const pi = LIBRARY.personal_info || (LIBRARY.personal_info = { name: '', email: '', phone: '', links: [] });
       c.appendChild(section('Personal info', null, null,
-        h('div', { class: 'pi-grid' }, field('Name', inp(pi, 'name')), field('Email', inp(pi, 'email')), field('Phone', inp(pi, 'phone')), field('Location', inp(pi, 'location')), field('Current address', inp(pi, 'current_address')), field('Links', linksInput(pi)))));
+        h('div', { class: 'pi-grid' }, field('Name', inp(pi, 'name')), field('Email', inp(pi, 'email')), field('Phone', inp(pi, 'phone')), field('Location / address', inp(pi, 'location')), field('Links', linksInput(pi)))));
       c.appendChild(section('Education', '+ education',
         () => { LIBRARY.education = LIBRARY.education || []; LIBRARY.education.push({ id: '', school: '', degree: '', major: '', location: '', gpa: '', start_date: '', end_date: '', details: [] }); renderEditor(); },
         (LIBRARY.education || []).map((e, i) => eduItem(e, i))));
