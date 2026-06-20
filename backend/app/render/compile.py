@@ -71,6 +71,22 @@ def pdf_to_base64(pdf: Optional[Path]) -> Optional[str]:
     return base64.b64encode(Path(pdf).read_bytes()).decode("ascii")
 
 
+def compile_error_of(tex: str, out_dir: Path) -> Optional[str]:
+    """Compile once just to capture the engine's error tail (diagnostics), or None."""
+    try:
+        compile_tex(tex, out_dir, stem="_diag")
+        return None
+    except CompileError as e:
+        return (e.log or str(e))[-2000:]
+    except Exception as e:  # noqa: BLE001
+        return str(e)
+    finally:
+        try:
+            (out_dir / "_diag.pdf").unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 def count_pages(pdf: Path) -> Optional[int]:
     """Page count of a compiled PDF, or None if it can't be read."""
     try:

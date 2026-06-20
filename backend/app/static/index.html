@@ -1063,8 +1063,9 @@ versions in production is required. Fast-paced startup environment.`;
             : `<span style="color:#15803d;">✓ one page</span>`;
         } else {
           $('gen-resume-pdf').style.display = 'none';
-          $('gen-resume-hint').textContent = (data.resume && data.resume.engine)
-            ? 'PDF compile failed on the server — check the server logs.'
+          const ce = data.resume && data.resume.compile_error;
+          $('gen-resume-hint').innerHTML = (data.resume && data.resume.engine)
+            ? 'PDF compile failed.' + (ce ? ` <details style="display:inline"><summary style="display:inline;cursor:pointer">show error</summary><pre style="white-space:pre-wrap;font-size:11px">${ce.replace(/[<&]/g, c => c === '<' ? '&lt;' : '&amp;')}</pre></details>` : ' Check the server logs.')
             : 'PDF engine not available on the server (the deploy must use Docker).';
         }
         // Cover pane

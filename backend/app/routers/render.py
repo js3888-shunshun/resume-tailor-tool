@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 from ..config import get_settings
 from ..latex_tools import detect_latex_engine
 from ..materials_store import load_materials
-from ..render.compile import pdf_to_base64, try_compile
+from ..render.compile import compile_error_of, pdf_to_base64, try_compile
 from ..render.fit import fit_to_one_page
 from ..render.latex import render_resume
 from ..schemas import (
@@ -64,6 +64,9 @@ class RenderResult(BaseModel):
     # downloads its OWN result (no shared server file -> safe for many users).
     pdf_base64: Optional[str] = None
     engine: Optional[str] = None
+    # When the engine is present but the compile failed, the engine's error tail
+    # (for diagnosing server-side compile problems without digging through logs).
+    compile_error: Optional[str] = None
     # Step 6 outcome: "fit" (landed on one page), "overflow" (too long even at
     # tightest spacing — trim manually), "no_engine", "error", or None if fit
     # wasn't run. `pages` is the chosen layout's page count.
@@ -169,9 +172,11 @@ def build_render_result(req: RenderRequest, lib: MaterialsLibrary) -> RenderResu
         pdf_path = settings.output_dir / f"{stem}.pdf"
         b64 = pdf_to_base64(pdf_path) if fit.pdf_available else None
         _cleanup(pdf_path)
+        # Engine present but no PDF -> capture the compile error for diagnosis.
+        err = None if fit.pdf_available else compile_error_of(fit.tex, settings.output_dir)
         return RenderResult(
             tex=fit.tex, pdf_available=fit.pdf_available, pdf_base64=b64,
-            engine=engine.name, fit_status=fit.status, pages=fit.pages,
+            engine=engine.name, fit_status=fit.status, pages=fit.pages, compile_error=err,
         )
 
     # No fit requested (or no engine): single render/compile at default spacing.
@@ -179,10 +184,11 @@ def build_render_result(req: RenderRequest, lib: MaterialsLibrary) -> RenderResu
     pdf_path = try_compile(tex, settings.output_dir, stem=stem) if engine else None
     b64 = pdf_to_base64(pdf_path) if pdf_path else None
     _cleanup(pdf_path)
+    err = compile_error_of(tex, settings.output_dir) if (engine and not pdf_path) else None
     return RenderResult(
         tex=tex, pdf_available=pdf_path is not None, pdf_base64=b64,
         engine=engine.name if engine else None,
-        fit_status="no_engine" if not engine else None,
+        fit_status="no_engine" if not engine else None, compile_error=err,
     )
 
 
