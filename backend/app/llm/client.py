@@ -43,16 +43,29 @@ class LLMClient:
                 "ANTHROPIC_API_KEY not configured. Set it in .env or inject a "
                 "responder for testing."
             )
-        if self._client is None:
-            import anthropic  # imported lazily so tests don't require the package at import time
+        import anthropic  # imported lazily so tests don't require the package at import time
 
+        if self._client is None:
             self._client = anthropic.Anthropic(api_key=self.api_key)
-        resp = self._client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
+        try:
+            resp = self._client.messages.create(
+                model=self.model,
+                max_tokens=max_tokens,
+                system=system,
+                messages=[{"role": "user", "content": user}],
+            )
+        except anthropic.APIStatusError as e:
+            # Surface a clear, user-facing message (e.g. low balance, bad key, rate
+            # limit) instead of letting a raw 500 reach the browser.
+            msg = e.message
+            try:
+                body = e.response.json()
+                msg = body.get("error", {}).get("message", msg)
+            except Exception:  # noqa: BLE001
+                pass
+            raise LLMError(msg) from e
+        except anthropic.APIError as e:  # network / connection problems
+            raise LLMError(f"Could not reach the Anthropic API: {e}") from e
         return "".join(block.text for block in resp.content if block.type == "text")
 
     def complete(self, system: str, user: str, max_tokens: int = 2048) -> str:
