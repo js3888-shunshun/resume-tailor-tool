@@ -8,6 +8,7 @@ module is simply not called (the /render endpoint returns the .tex only).
 
 from __future__ import annotations
 
+import logging
 import subprocess
 import tempfile
 from pathlib import Path
@@ -88,5 +89,12 @@ def try_compile(tex: str, out_dir: Path, stem: str = "resume") -> Optional[Path]
     """
     try:
         return compile_tex(tex, out_dir, stem=stem)
-    except Exception:  # noqa: BLE001 - best-effort; the .tex is still returned
+    except CompileError as e:
+        # Log the engine's own output so a server-side compile failure is diagnosable.
+        logging.getLogger("resume_tailor.compile").warning(
+            "PDF compile failed: %s\n%s", e, (e.log or "")[-1500:]
+        )
+        return None
+    except Exception as e:  # noqa: BLE001 - best-effort; the .tex is still returned
+        logging.getLogger("resume_tailor.compile").warning("PDF compile error: %s", e)
         return None

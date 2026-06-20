@@ -67,7 +67,7 @@ def fit_to_one_page(
     tight_tex = render_resume(doc, layout_for(0.0))
     pt = measure(tight_tex)
     if pt is None:
-        _cleanup_probe(out_dir)
+        _cleanup_probe(out_dir, probe_stem)
         return FitResult(tight_tex, 0, 0.0, "error", False)
     if pt > 1:
         log.info("Step6: content overflows one page even at tightest spacing (%d pages)", pt)
