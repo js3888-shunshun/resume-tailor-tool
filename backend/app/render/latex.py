@@ -123,7 +123,8 @@ def _contact_line(doc: ResumeDocument) -> str:
         parts.append("Email: " + latex_escape(doc.contact.email))
     if doc.contact.phone:
         parts.append("Tel: " + latex_escape(doc.contact.phone))
-    # `location` renders on its own line below (see the template), not inline here.
+    if doc.contact.location:
+        parts.append(latex_escape(doc.contact.location))
     parts.extend(latex_escape(link) for link in doc.contact.links if link)
     return " | ".join(parts)
 

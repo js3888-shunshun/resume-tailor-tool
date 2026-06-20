@@ -473,9 +473,8 @@ versions in production is required. Fast-paced startup environment.`;
       if (!LIBRARY) { c.appendChild(h('div', { class: 'lv-empty' }, 'No library yet — parse your resume to begin.')); return; }
       const pi = LIBRARY.personal_info || {};
       c.appendChild(h('div', { class: 'lv-name' }, pi.name || 'Your Name'));
-      const contact = [pi.email, pi.phone, ...(pi.links || [])].filter(Boolean).join('   ·   ');
+      const contact = [pi.email, pi.phone, pi.location, ...(pi.links || [])].filter(Boolean).join('   ·   ');
       if (contact) c.appendChild(h('div', { class: 'lv-contact' }, contact));
-      if (pi.location) c.appendChild(h('div', { class: 'lv-contact' }, pi.location));
       if ((LIBRARY.education || []).length) {
         c.appendChild(lvSection('Education'));
         LIBRARY.education.forEach((e) => c.appendChild(h('div', { class: 'lv-entry' },

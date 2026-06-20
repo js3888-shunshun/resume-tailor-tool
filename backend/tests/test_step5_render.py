@@ -188,11 +188,9 @@ def test_render_education_date_and_spaced_gpa():
     assert "New York, NY" not in tex  # education location no longer rendered
 
 
-def test_render_location_on_own_line():
+def test_render_location_inline_in_contact():
     tex = render_resume(_doc(contact=RenderContact(
-        name="J", email="j@x.com", location="New York, NY, 10044")))
-    # Location/address renders on its own line below contact, not inline in it.
-    assert "New York, NY, 10044" in tex
-    assert "Email: j@x.com" in tex
-    assert "j@x.com | New York" not in tex  # not joined inline with the contact line
+        name="J", email="j@x.com", phone="123", location="New York, NY, 10044")))
+    # Location/address sits inline in the contact line: Email | Tel | address.
+    assert "Email: j@x.com | Tel: 123 | New York, NY, 10044" in tex
     assert tex.count("{") == tex.count("}")
