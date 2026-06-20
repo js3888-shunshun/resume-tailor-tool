@@ -11,6 +11,11 @@
       --text: #3c4a6b; --muted: #8893b8;
       --accent: #62b6ff; --accent-dk: #3aa0f7; --accent-soft: #e6f4ff; --accent-bd: #c4e4ff;
       --purple: #b08cf8; --purple-dk: #8b5cf6;
+      --g-blue: linear-gradient(135deg, #6fbcff, #3aa0f7); --gl-blue: rgba(58,160,247,.45);
+      --g-pink: linear-gradient(135deg, #fb9fd6, #ee6cb0); --gl-pink: rgba(238,108,176,.45);
+      --g-purple: linear-gradient(135deg, #c2a4fb, #9b6ef4); --gl-purple: rgba(155,110,244,.45);
+      --g-green: linear-gradient(135deg, #5fddb0, #25c98c); --gl-green: rgba(37,201,140,.45);
+      --g-yellow: linear-gradient(135deg, #ffd06a, #f7b22f); --gl-yellow: rgba(247,178,47,.5);
       --pink: #fa83c4; --pink-dk: #e0408f; --pink-soft: #ffe7f4; --yellow: #f9b938; --green: #2ecf94; --blue: #62b6ff;
       --hl: #b06a0c; --hl-bg: #fef0d2; --hl-bd: #f6d99a;
       --ok: #16a35a; --err: #ef476f; --teal: #14b3b3; --teal-soft: #d6f5f5;
@@ -38,8 +43,12 @@
       padding: 12px 16px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: var(--clay-sm);
       transition: transform .16s ease, box-shadow .16s ease, color .16s ease; }
     .tab-btn:hover { color: var(--text); transform: translateY(-2px); }
-    .tab-btn.active, .tab-btn.active:hover { background: linear-gradient(135deg, var(--accent), var(--accent-dk));
-      color: #fff; box-shadow: var(--clay-accent); transform: none; }
+    .tab-btn.active, .tab-btn.active:hover { color: #fff; transform: none;
+      box-shadow: 0 8px 16px var(--tab-glow, var(--gl-blue)), inset 0 2px 6px rgba(255,255,255,.5), inset 0 -3px 8px rgba(0,0,0,.1); }
+    .tab-btn[data-tab="library"].active { background: var(--g-blue); --tab-glow: var(--gl-blue); }
+    .tab-btn[data-tab="generate"].active { background: var(--g-green); --tab-glow: var(--gl-green); }
+    .tab-btn[data-tab="tailor"].active { background: var(--g-purple); --tab-glow: var(--gl-purple); }
+    .tab-btn[data-tab="cover"].active { background: var(--g-pink); --tab-glow: var(--gl-pink); }
     .side-status { margin-top: auto; font-size: 11px; color: var(--muted); line-height: 1.8;
       background: var(--panel); border-radius: 16px; padding: 13px 15px; box-shadow: var(--clay-sm); }
     .side-status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
@@ -57,15 +66,20 @@
     textarea:focus, .edit:focus, input:focus, select:focus { outline: none; box-shadow: var(--clay-in), 0 0 0 3px var(--accent-soft); }
     #jd { min-height: 200px; }
     .row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
-    button { background: linear-gradient(135deg, var(--accent), var(--accent-dk)); color: #fff; border: 0;
+    button { --btn-grad: var(--g-blue); --btn-glow: var(--gl-blue);
+      background: var(--btn-grad); color: #fff; border: 0;
       border-radius: 16px; padding: 11px 20px; font-size: 14px; font-weight: 700; cursor: pointer;
-      box-shadow: var(--clay-accent); transition: transform .14s ease, box-shadow .14s ease, filter .14s ease; }
-    button:hover { transform: translateY(-2px); filter: brightness(1.06);
-      box-shadow: 0 12px 22px rgba(47,139,233,.5), inset 0 2px 6px rgba(255,255,255,.45), inset 0 -3px 8px rgba(0,0,0,.13); }
-    button:active { transform: translateY(1px); box-shadow: 0 4px 10px rgba(47,139,233,.4), inset 0 3px 8px rgba(0,0,0,.2); }
+      box-shadow: 0 8px 18px var(--btn-glow), inset 0 2px 6px rgba(255,255,255,.5), inset 0 -3px 8px rgba(0,0,0,.1);
+      transition: transform .14s ease, filter .14s ease; }
+    button:hover { transform: translateY(-2px); filter: brightness(1.07) saturate(1.05); }
+    button:active { transform: translateY(1px); filter: brightness(.97); }
     button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
-    button.secondary { background: var(--panel); color: var(--text); box-shadow: var(--clay-sm); }
-    button.secondary:hover { filter: none; }
+    button.secondary { --btn-grad: var(--panel); --btn-glow: rgba(124,150,205,.32); color: var(--text); }
+    /* Different actions, different colors */
+    #analyzeBtn, #finalizeBtn { --btn-grad: var(--g-purple); --btn-glow: var(--gl-purple); }
+    #polishBtn, #coverBtn { --btn-grad: var(--g-pink); --btn-glow: var(--gl-pink); }
+    #genBtn, #gen-btn, #saveLibBtn { --btn-grad: var(--g-green); --btn-glow: var(--gl-green); }
+    #sampleBtn { --btn-grad: var(--g-yellow); --btn-glow: var(--gl-yellow); color: #6a4a00; }
     input[type=number], input[type=file] { color: var(--text); accent-color: var(--accent); }
     input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
     .hint { color: var(--muted); font-size: 12px; }
