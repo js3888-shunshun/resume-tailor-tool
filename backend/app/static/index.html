@@ -257,6 +257,7 @@
       <button class="tab-btn" data-tab="generate">One-Click</button>
       <button class="tab-btn" data-tab="tailor">Tailor to JD</button>
       <button class="tab-btn" data-tab="cover">Cover Letter</button>
+      <button class="tab-btn" data-tab="qa">Application Q&amp;A</button>
       <div class="side-status">
         <div id="status">checking…</div>
         <div id="lib-source" style="margin-top:8px;"></div>
@@ -405,6 +406,31 @@
             <iframe id="cover-frame" title="Cover letter PDF preview" style="width:100%; height:840px; border:1px solid var(--border); border-radius:8px; background:#f4f4f5;"></iframe>
           </div>
           <details class="raw"><summary class="muted">LaTeX source (.tex)</summary><pre id="cover-tex-out"></pre></details>
+        </div>
+      </section>
+
+      <!-- ============ TAB: APPLICATION Q&A ============ -->
+      <section class="tab-panel" id="tab-qa" hidden>
+        <div class="card">
+          <p class="field-title" style="margin:0 0 6px;">Application Q&amp;A</p>
+          <div class="hint" style="margin-bottom:10px;">Paste an application question (and any requirements, like a word limit) and get an answer drawn from your background. Add the job description for a more tailored answer.</div>
+          <label>Question &amp; requirements</label>
+          <textarea id="qa-question" rows="4" placeholder="e.g. Why do you want to work here? (max 150 words)" style="width:100%; box-sizing:border-box;"></textarea>
+          <details class="raw" style="margin-top:8px;"><summary class="muted">Add the job description for context (optional)</summary>
+            <textarea id="qa-jd" rows="4" placeholder="" style="width:100%; box-sizing:border-box; margin-top:8px;"></textarea>
+          </details>
+          <div class="final-bar">
+            <button id="qa-btn">Generate answer</button>
+            <span class="hint" id="qa-hint"></span>
+          </div>
+          <div id="qa-answer-wrap" style="display:none; margin-top:12px;">
+            <div class="final-bar" style="border:0; padding:0; margin:0 0 6px;">
+              <b>Answer</b>
+              <button class="mini" id="qa-copy">Copy</button>
+              <span class="hint" id="qa-count"></span>
+            </div>
+            <textarea id="qa-answer" rows="9" style="width:100%; box-sizing:border-box;"></textarea>
+          </div>
         </div>
       </section>
 
@@ -1117,6 +1143,31 @@ versions in production is required. Fast-paced startup environment.`;
       } catch (e) { $('gen-hint').textContent = 'Request failed: ' + e.message; }
       finally { btn.disabled = false; btn.textContent = old; }
     }
+    function qaWordCount() {
+      const n = ($('qa-answer').value.trim().match(/\S+/g) || []).length;
+      $('qa-count').textContent = n + ' words';
+    }
+    async function generateAnswer() {
+      const q = $('qa-question').value.trim();
+      if (!q) { $('qa-hint').textContent = 'Paste a question first.'; return; }
+      if (!LIBRARY) { $('qa-hint').textContent = 'Add your resume in Material Library first.'; return; }
+      const btn = $('qa-btn'); btn.disabled = true; const old = btn.textContent; btn.innerHTML = '<span class="spinner"></span> Writing…';
+      try {
+        const r = await fetch('/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q, jd_text: $('qa-jd').value.trim(), library: LIBRARY }) });
+        const data = await r.json();
+        if (!r.ok) { $('qa-hint').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
+        $('qa-answer').value = data.answer; $('qa-answer-wrap').style.display = 'block'; $('qa-hint').textContent = '';
+        qaWordCount();
+      } catch (e) { $('qa-hint').textContent = 'Request failed: ' + e.message; }
+      finally { btn.disabled = false; btn.textContent = old; }
+    }
+    async function copyAnswer() {
+      const t = $('qa-answer').value;
+      try { await navigator.clipboard.writeText(t); }
+      catch (e) { $('qa-answer').focus(); $('qa-answer').select(); try { document.execCommand('copy'); } catch (_) {} }
+      const b = $('qa-copy'); b.textContent = 'Copied ✓'; setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+    }
     async function computeMatch() {
       const jd = $('jd').value.trim();
       if (!jd) { $('match-hint').textContent = 'Paste a job description above first.'; return; }
@@ -1166,6 +1217,9 @@ versions in production is required. Fast-paced startup environment.`;
     $('toggleViewBtn').addEventListener('click', () => { LIB_VIEW = LIB_VIEW === 'compact' ? 'edit' : 'compact'; renderLibrary(); });
     $('analyzeBtn').addEventListener('click', analyze);
     $('matchBtn').addEventListener('click', computeMatch);
+    $('qa-btn').addEventListener('click', generateAnswer);
+    $('qa-copy').addEventListener('click', copyAnswer);
+    $('qa-answer').addEventListener('input', qaWordCount);
     $('polishBtn').addEventListener('click', polish);
     $('finalizeBtn').addEventListener('click', finalizeDraft);
     $('genBtn').addEventListener('click', generateResume);

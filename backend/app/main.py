@@ -16,6 +16,7 @@ from .config import get_settings
 from .deps import require_auth
 from .latex_tools import INSTALL_HINT, detect_latex_engine
 from .llm import LLMError
+from .routers import answer as answer_router
 from .routers import auth as auth_router
 from .routers import cover_letter as cover_letter_router
 from .routers import generate as generate_router
@@ -44,6 +45,7 @@ app.include_router(render_router.router, dependencies=_auth)
 app.include_router(cover_letter_router.router, dependencies=_auth)
 app.include_router(generate_router.router, dependencies=_auth)
 app.include_router(match_router.router, dependencies=_auth)
+app.include_router(answer_router.router, dependencies=_auth)
 
 
 @app.exception_handler(LLMError)
