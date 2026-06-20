@@ -9,12 +9,13 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from fastapi import Depends, FastAPI
-from fastapi.responses import FileResponse
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse
 
 from .config import get_settings
 from .deps import require_auth
 from .latex_tools import INSTALL_HINT, detect_latex_engine
+from .llm import LLMError
 from .routers import auth as auth_router
 from .routers import cover_letter as cover_letter_router
 from .routers import generate as generate_router
@@ -41,6 +42,20 @@ app.include_router(rewrite_router.router, dependencies=_auth)
 app.include_router(render_router.router, dependencies=_auth)
 app.include_router(cover_letter_router.router, dependencies=_auth)
 app.include_router(generate_router.router, dependencies=_auth)
+
+
+@app.exception_handler(LLMError)
+def _llm_error_handler(request: Request, exc: LLMError) -> JSONResponse:
+    """Any LLM problem (bad key, low balance, rate limit) -> clear 503 JSON."""
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
+@app.exception_handler(Exception)
+def _unhandled_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Never let an unhandled error reach the browser as non-JSON 'Internal Server
+    Error' (which the frontend can't parse). Return the message as JSON instead."""
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": f"Server error: {exc}"})
 
 
 @app.get("/", include_in_schema=False)
