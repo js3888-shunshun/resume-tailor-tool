@@ -50,9 +50,10 @@
 \VAR{skills_block}
 \BLOCK{endif}
 
-\BLOCK{if doc.experiences}
-\section{Professional Experience}
-\BLOCK{for x in doc.experiences}
+\BLOCK{macro entry_list(entries, heading)}
+\BLOCK{if entries}
+\section{\VAR{heading | latex}}
+\BLOCK{for x in entries}
 \VAR{x | entry_head}
 \BLOCK{if x.bullets}
 \begin{itemize}
@@ -63,19 +64,14 @@
 \BLOCK{endif}
 \BLOCK{endfor}
 \BLOCK{endif}
+\BLOCK{endmacro}
 
-\BLOCK{if doc.projects}
-\section{\VAR{doc.projects_heading | latex}}
-\BLOCK{for x in doc.projects}
-\VAR{x | entry_head}
-\BLOCK{if x.bullets}
-\begin{itemize}
-\BLOCK{for b in x.bullets}
-    \item \VAR{b | bullet}
-\BLOCK{endfor}
-\end{itemize}
-\BLOCK{endif}
-\BLOCK{endfor}
+\BLOCK{if doc.projects_first}
+\VAR{entry_list(doc.projects, doc.projects_heading)}
+\VAR{entry_list(doc.experiences, "Professional Experience")}
+\BLOCK{else}
+\VAR{entry_list(doc.experiences, "Professional Experience")}
+\VAR{entry_list(doc.projects, doc.projects_heading)}
 \BLOCK{endif}
 
 \end{document}

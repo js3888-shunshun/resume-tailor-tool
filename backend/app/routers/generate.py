@@ -48,6 +48,7 @@ class GenerateRequest(BaseModel):
     highlight: bool = True
     fit_one_page: bool = True
     projects_heading: str = "Research Experience"
+    projects_first: bool = False
     # Cover letter (optional) + its personalization.
     cover_letter: bool = True
     company_notes: str = ""
@@ -110,6 +111,7 @@ def generate(req: GenerateRequest, client: LLMClient = Depends(make_client)) -> 
         highlight=req.highlight,
         fit_one_page=req.fit_one_page,
         projects_heading=req.projects_heading,
+        projects_first=req.projects_first,
     ), lib)
 
     # Step 7: cover letter.

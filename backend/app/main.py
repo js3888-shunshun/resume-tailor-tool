@@ -20,6 +20,7 @@ from .routers import auth as auth_router
 from .routers import cover_letter as cover_letter_router
 from .routers import generate as generate_router
 from .routers import jd as jd_router
+from .routers import match as match_router
 from .routers import materials as materials_router
 from .routers import render as render_router
 from .routers import rewrite as rewrite_router
@@ -42,6 +43,7 @@ app.include_router(rewrite_router.router, dependencies=_auth)
 app.include_router(render_router.router, dependencies=_auth)
 app.include_router(cover_letter_router.router, dependencies=_auth)
 app.include_router(generate_router.router, dependencies=_auth)
+app.include_router(match_router.router, dependencies=_auth)
 
 
 @app.exception_handler(LLMError)

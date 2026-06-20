@@ -215,6 +215,15 @@
     .rw-orig ul { margin:6px 0 0; padding-left:18px; }
     .rw-orig li { color:var(--muted); font-size:12px; margin-bottom:3px; }
     .final-bar { display:flex; align-items:center; gap:12px; margin-top:6px; padding-top:12px; border-top:1px solid var(--border); }
+    /* JD match score */
+    .match-box { display:flex; gap:18px; align-items:center; background:var(--panel); border-radius:18px; padding:16px 18px; box-shadow: var(--clay-sm); }
+    .match-ring { flex:0 0 auto; width:90px; height:90px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg); box-shadow: var(--clay-in); }
+    .match-num { font-size:30px; font-weight:800; line-height:1; }
+    .match-of { font-size:11px; color:var(--muted); margin-top:2px; }
+    .match-summary { font-size:13px; margin-bottom:8px; }
+    .match-cols { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .match-ul { margin:4px 0 0; padding-left:16px; } .match-ul li { font-size:12.5px; margin-bottom:3px; line-height:1.4; }
+    @media (max-width:640px){ .match-cols{ grid-template-columns:1fr; } }
     /* login overlay */
     .login-overlay { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;
       background: linear-gradient(135deg, #dcefff 0%, #eae2ff 32%, #ffe4f2 64%, #fff5dc 100%); }
@@ -319,6 +328,11 @@
             <div><p class="field-title">Key skills</p><div class="chips" id="r-skills"></div></div>
             <div><p class="field-title">Key responsibilities</p><ul class="resp" id="r-resp"></ul></div>
           </div>
+          <div class="final-bar">
+            <button class="mini" id="matchBtn">Match score</button>
+            <span class="hint" id="match-hint">How well your library fits this JD (uses one AI call).</span>
+          </div>
+          <div id="match-result" style="display:none; margin-top:12px;"></div>
           <details class="raw"><summary class="muted">Raw JSON</summary><pre id="r-raw"></pre></details>
         </div>
 
@@ -357,6 +371,7 @@
             <button id="genBtn">Generate &amp; preview PDF</button>
             <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="hlToggle" checked> bold JD keywords</label>
             <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="fitToggle" checked> fit to one page</label>
+            <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="projFirst"> projects first</label>
             <a id="pdfLink" class="mini" href="/render/pdf" download="resume.pdf" style="display:none;">Download PDF</a>
             <button class="mini" id="texDownloadBtn" disabled>Download .tex</button>
             <span class="hint" id="render-hint"></span>
@@ -403,6 +418,7 @@
             <label class="hint">projects <input id="gen-proj" type="number" value="1" min="0" max="15" style="width:54px;"></label>
             <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="gen-hl" checked> bold keywords</label>
             <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="gen-fit" checked> fit one page</label>
+            <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="gen-proj-first"> projects first</label>
             <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="gen-cover" checked> cover letter</label>
           </div>
           <details class="raw" style="margin-top:8px;"><summary class="muted">Cover letter personalization (optional)</summary>
@@ -519,7 +535,8 @@ versions in production is required. Fast-paced startup environment.`;
             tagWrap.style.display = open ? 'none' : 'block'; ev.target.textContent = open ? 'show tags' : 'hide tags'; } }, 'show tags')
         : h('span', { class: 'hint' }, 'no tags');
       const cats = (e.categories || []).map((c) => h('span', { class: 'chip cat' }, c));
-      const meta = h('div', { class: 'lv-meta' }, cats, toggle);
+      const doms = (e.domains || []).map((d) => h('span', { class: 'chip kw' }, d));
+      const meta = h('div', { class: 'lv-meta' }, cats, doms, toggle);
       return h('div', { class: 'lv-entry' }, head, sub, ul, meta, tagWrap);
     }
     function renderCompact() {
@@ -587,7 +604,17 @@ versions in production is required. Fast-paced startup environment.`;
         h('div', { class: 'item-head' }, h('span', { class: 'muted', style: 'font-size:12px;' }, exp.id || '(new)'),
           h('button', { class: 'mini danger', type: 'button', onclick: () => { LIBRARY[kind].splice(idx, 1); renderEditor(); } }, 'Delete ' + (isProj ? 'project' : 'experience'))),
         grid, h('div', { class: 'f' }, h('label', { class: 'inl' }, 'Categories'), catRow(exp)),
+        h('div', { class: 'f', style: 'margin-top:8px;' }, h('label', { class: 'inl' }, 'Domains (e.g. finance, gaming)'), domainsEditor(exp)),
         h('div', { class: 'f', style: 'margin-top:8px;' }, h('label', { class: 'inl' }, 'Bullets'), bulletsWrap));
+    }
+    function domainsEditor(item) {
+      item.domains = item.domains || [];
+      const wrap = h('div', { class: 'chips' });
+      item.domains.forEach((t, i) => wrap.appendChild(h('span', { class: 'chip cat tag-chip' }, t,
+        h('span', { class: 'x', onclick: () => { item.domains.splice(i, 1); renderEditor(); } }, '×'))));
+      const add = h('input', { class: 'tag-add', placeholder: '+ domain' });
+      add.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && ev.target.value.trim()) { item.domains.push(ev.target.value.trim()); renderEditor(); } });
+      wrap.appendChild(add); return wrap;
     }
     function eduItem(edu, idx) {
       return h('div', { class: 'item' },
@@ -706,6 +733,9 @@ versions in production is required. Fast-paced startup environment.`;
       renderChips($('r-skills'), p.key_skills, 'skill');
       const ul = $('r-resp'); ul.innerHTML = ''; (p.key_responsibilities || []).forEach((t) => ul.appendChild(h('li', {}, t)));
       $('r-raw').textContent = JSON.stringify(p, null, 2); $('result').style.display = 'block';
+      // Reset any previous match score when a new JD is analyzed.
+      $('match-result').style.display = 'none'; $('match-result').innerHTML = '';
+      $('match-hint').textContent = 'How well your library fits this JD (uses one AI call).';
     }
     let MATERIALS_MAP = {};
     function buildMaterialsMap() {
@@ -910,6 +940,7 @@ versions in production is required. Fast-paced startup environment.`;
           skills: (WORKING && WORKING.skills) || [],
           highlight: $('hlToggle').checked,
           fit_one_page: fit,
+          projects_first: $('projFirst').checked,
           projects_heading: 'Research Experience',
         };
         const r = await fetch('/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -1042,6 +1073,7 @@ versions in production is required. Fast-paced startup environment.`;
           target_projects: parseInt($('gen-proj').value, 10) || 0,
           highlight: $('gen-hl').checked,
           fit_one_page: $('gen-fit').checked,
+          projects_first: $('gen-proj-first').checked,
           cover_letter: $('gen-cover').checked,
           company_notes: $('gen-notes').value.trim(),
           recruiter: $('gen-recruiter').value.trim(),
@@ -1088,6 +1120,27 @@ versions in production is required. Fast-paced startup environment.`;
       } catch (e) { $('gen-hint').textContent = 'Request failed: ' + e.message; }
       finally { btn.disabled = false; btn.textContent = old; }
     }
+    async function computeMatch() {
+      if (!LAST_PROFILE) { $('match-hint').textContent = 'Run Analyze first.'; return; }
+      if (!LIBRARY) { $('match-hint').textContent = 'Add your resume in Material Library first.'; return; }
+      const btn = $('matchBtn'); btn.disabled = true; const old = btn.textContent; btn.innerHTML = '<span class="spinner"></span> Scoring…';
+      try {
+        const r = await fetch('/match', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jd_profile: LAST_PROFILE, library: LIBRARY }) });
+        const data = await r.json();
+        if (!r.ok) { $('match-hint').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
+        const color = data.score >= 80 ? '#15803d' : data.score >= 60 ? '#3aa0f7' : data.score >= 40 ? '#b45309' : '#dc2626';
+        const el = $('match-result'); el.innerHTML = '';
+        el.appendChild(h('div', { class: 'match-box' },
+          h('div', { class: 'match-ring' }, h('span', { class: 'match-num', style: `color:${color}` }, String(data.score)), h('span', { class: 'match-of' }, '/ 100')),
+          h('div', { style: 'flex:1' },
+            data.summary ? h('div', { class: 'match-summary' }, data.summary) : null,
+            h('div', { class: 'match-cols' },
+              h('div', {}, h('div', { class: 'rw-collabel after' }, 'Strengths'), h('ul', { class: 'match-ul' }, (data.strengths || []).map((s) => h('li', {}, s)))),
+              h('div', {}, h('div', { class: 'rw-collabel' }, 'Gaps'), h('ul', { class: 'match-ul' }, (data.gaps || []).map((g) => h('li', {}, g))))))));
+        el.style.display = 'block'; $('match-hint').textContent = '';
+      } catch (e) { $('match-hint').textContent = 'Request failed: ' + e.message; }
+      finally { btn.disabled = false; btn.textContent = old; }
+    }
     async function analyze() {
       const jd = $('jd').value.trim(); $('error').textContent = '';
       if (!jd) { $('error').textContent = 'Please paste a job description first.'; return; }
@@ -1114,6 +1167,7 @@ versions in production is required. Fast-paced startup environment.`;
     $('saveLibBtn').addEventListener('click', saveLibrary);
     $('toggleViewBtn').addEventListener('click', () => { LIB_VIEW = LIB_VIEW === 'compact' ? 'edit' : 'compact'; renderLibrary(); });
     $('analyzeBtn').addEventListener('click', analyze);
+    $('matchBtn').addEventListener('click', computeMatch);
     $('polishBtn').addEventListener('click', polish);
     $('finalizeBtn').addEventListener('click', finalizeDraft);
     $('genBtn').addEventListener('click', generateResume);

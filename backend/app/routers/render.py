@@ -51,6 +51,8 @@ class RenderRequest(BaseModel):
     skills: List[str] = Field(default_factory=list)
     highlight: bool = True
     projects_heading: str = "Research Experience"
+    # Put the projects/research section before professional experience.
+    projects_first: bool = False
     # Step 6: auto-tune spacing to land on exactly one page (needs an engine).
     fit_one_page: bool = True
     # The user's library (client-supplied); server file/sample fallback when absent.
@@ -155,6 +157,7 @@ def _build_document(req: RenderRequest, lib: MaterialsLibrary) -> ResumeDocument
         experiences=experiences,
         projects=projects,
         projects_heading=req.projects_heading,
+        projects_first=req.projects_first,
         highlight=req.highlight,
     )
 

@@ -86,5 +86,7 @@ class ResumeDocument(BaseModel):
     projects: List[RenderEntry] = Field(default_factory=list)
     # The user's resume labels this section "Research Experience"; configurable.
     projects_heading: str = "Projects"
+    # Render the projects/research section BEFORE professional experience.
+    projects_first: bool = False
     # Wrap matched JD keywords in \hlkw (bold) for ATS emphasis.
     highlight: bool = True

@@ -188,6 +188,19 @@ def test_render_education_date_and_spaced_gpa():
     assert "New York, NY" not in tex  # education location no longer rendered
 
 
+def test_render_projects_first_swaps_order():
+    kw = dict(
+        experiences=[RenderEntry(organization="Acme", title="Eng", bullets=[RenderBullet(text="x")])],
+        projects=[RenderEntry(kind="project", title="Proj", bullets=[RenderBullet(text="y")])],
+        projects_heading="Research Experience",
+    )
+    default = render_resume(_doc(projects_first=False, **kw))
+    swapped = render_resume(_doc(projects_first=True, **kw))
+    assert default.index("Professional Experience") < default.index("Research Experience")
+    assert swapped.index("Research Experience") < swapped.index("Professional Experience")
+    assert swapped.count("{") == swapped.count("}")
+
+
 def test_render_location_inline_in_contact():
     tex = render_resume(_doc(contact=RenderContact(
         name="J", email="j@x.com", phone="123", location="New York, NY, 10044")))

@@ -62,6 +62,8 @@ class Experience(BaseModel):
     start_date: str = ""
     end_date: str = ""
     categories: List[Category] = Field(default_factory=list)
+    # Free-form domain/industry tags, e.g. "finance", "gaming", "healthcare".
+    domains: List[str] = Field(default_factory=list)
     bullets: List[Bullet] = Field(default_factory=list)
 
 
@@ -72,6 +74,7 @@ class Project(BaseModel):
     start_date: str = ""
     end_date: str = ""
     categories: List[Category] = Field(default_factory=list)
+    domains: List[str] = Field(default_factory=list)
     bullets: List[Bullet] = Field(default_factory=list)
 
 
