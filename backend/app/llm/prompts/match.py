@@ -11,8 +11,15 @@ Scoring guide (be realistic and discriminating, not generous):
 - 30-49: weak fit, some transferable skills but major gaps.
 - 0-29: poor fit.
 
-Judge on: required hard skills and tools, the kind of work and seniority, and the
-domain/industry. Use ONLY what the background shows; do not assume unstated skills.
+Judge on: the required hard skills and tools, the kind of work, and the
+domain/industry — measured against what the JD ACTUALLY asks for. Use ONLY what
+the background shows; do not assume unstated skills.
+
+SENIORITY: weigh experience level ONLY if the JD states one (e.g. "Senior",
+"Lead", "Staff", or "N+ years of experience"). If the JD does not state a level,
+or it targets entry-level / new-grad / intern roles, then internship and project
+experience is appropriate — do NOT penalize "limited full-time tenure" and do NOT
+list it as a gap. Never invent a tenure or years requirement the JD doesn't state.
 
 Output (STRICT): reply with ONLY a JSON object, no prose, no code fences:
 {"score": <int 0-100>, "summary": "<one honest sentence>",
