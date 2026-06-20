@@ -226,6 +226,13 @@
             <button id="parseReplaceBtn">Parse PDF</button>
             <span class="hint" id="lib-hint"></span>
           </div>
+          <div style="margin-top:14px;">
+            <label>Or paste text to add</label>
+            <textarea id="resumeText" placeholder=""></textarea>
+            <div class="row">
+              <button class="secondary" id="parseAppendBtn">Add to library</button>
+            </div>
+          </div>
           <div class="error" id="lib-error"></div>
         </div>
 
@@ -603,21 +610,27 @@ versions in production is required. Fast-paced startup environment.`;
       (lib.experiences || []).forEach((e, i) => { e.id = `exp_${pad(i + 1)}`; (e.bullets || []).forEach((b) => { bn++; b.id = `bullet_${pad(bn)}`; }); });
       (lib.projects || []).forEach((p, i) => { p.id = `proj_${pad(i + 1)}`; (p.bullets || []).forEach((b) => { bn++; b.id = `bullet_${pad(bn)}`; }); });
     }
-    async function parseResume() {
+    async function parseResume(mode) {
       $('lib-error').textContent = '';
       const file = $('resumeFile').files[0];
-      if (!file) { $('lib-error').textContent = 'Choose a resume PDF first.'; return; }
-      const btn = $('parseReplaceBtn');
+      const text = $('resumeText').value.trim();
+      if (mode === 'replace' && !file) { $('lib-error').textContent = 'Choose a resume PDF first.'; return; }
+      if (mode === 'append' && !text) { $('lib-error').textContent = 'Paste some text to add first.'; return; }
+      const btn = mode === 'replace' ? $('parseReplaceBtn') : $('parseAppendBtn');
       const label = btn.textContent; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Parsing…';
       try {
         const fd = new FormData();
-        fd.append('file', file);
-        fd.append('mode', 'replace');
+        if (mode === 'replace') fd.append('file', file);
+        if (mode === 'append') fd.append('resume_text', text);
+        fd.append('mode', mode);
+        // Append into the CURRENT in-memory library so consecutive adds accumulate.
+        if (mode === 'append' && LIBRARY) fd.append('base_library', JSON.stringify(LIBRARY));
         const r = await fetch('/materials/ingest', { method: 'POST', body: fd });
         const data = await r.json();
         if (!r.ok) { $('lib-error').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         LIBRARY = data; LIB_VIEW = 'compact'; renderLibrary();
-        $('lib-hint').textContent = 'Parsed — review & Save.';
+        $('lib-hint').textContent = mode === 'append' ? 'Added — review & Save.' : 'Parsed — review & Save.';
+        if (mode === 'append') $('resumeText').value = '';
       } catch (e) { $('lib-error').textContent = 'Request failed: ' + e.message; }
       finally { btn.disabled = false; btn.textContent = label; }
     }
@@ -1043,7 +1056,8 @@ versions in production is required. Fast-paced startup environment.`;
       finally { btn.disabled = false; btn.textContent = 'Analyze & Select'; }
     }
 
-    $('parseReplaceBtn').addEventListener('click', () => parseResume());
+    $('parseReplaceBtn').addEventListener('click', () => parseResume('replace'));
+    $('parseAppendBtn').addEventListener('click', () => parseResume('append'));
     $('saveLibBtn').addEventListener('click', saveLibrary);
     $('toggleViewBtn').addEventListener('click', () => { LIB_VIEW = LIB_VIEW === 'compact' ? 'edit' : 'compact'; renderLibrary(); });
     $('analyzeBtn').addEventListener('click', analyze);
