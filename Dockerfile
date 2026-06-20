@@ -1,12 +1,17 @@
 # AI Resume Tailor — container image for Render / any Docker host.
 FROM python:3.12-slim
 
-# System deps + the tectonic LaTeX engine (self-contained binary).
+# System deps + the shared libraries tectonic dynamically links (graphite2 /
+# harfbuzz / freetype / icu / fontconfig). libharfbuzz0b pulls the whole
+# text-shaping chain, which fixes "libgraphite2.so.3: cannot open shared object".
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates fontconfig \
+    && apt-get install -y --no-install-recommends \
+        curl ca-certificates fontconfig \
+        libharfbuzz0b libgraphite2-3 libfreetype6 libfontconfig1 \
     && rm -rf /var/lib/apt/lists/*
 RUN curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net | sh \
-    && mv tectonic /usr/local/bin/tectonic
+    && mv tectonic /usr/local/bin/tectonic \
+    && /usr/local/bin/tectonic --version
 ENV RESUME_TAILOR_TECTONIC=/usr/local/bin/tectonic
 # Pin the cache dir so the build-time prewarm and runtime use the SAME cache
 # (otherwise a differing $HOME on the host causes a cache miss -> runtime fetch).
