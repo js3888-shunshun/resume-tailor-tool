@@ -20,9 +20,8 @@ Output (STRICT): reply with ONLY a JSON object, no prose, no code fences:
 - 2 to 4 strengths and 1 to 4 gaps, each a short phrase. `gaps` may be [] only if the
   fit is genuinely excellent."""
 
-MATCH_USER = """Target role: {job_title} at {company}
-Key responsibilities: {responsibilities}
-Key skills required: {skills}
+MATCH_USER = """JOB DESCRIPTION:
+{jd}
 
 CANDIDATE BACKGROUND:
 {background}

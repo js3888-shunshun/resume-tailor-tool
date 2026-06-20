@@ -7,7 +7,7 @@ from typing import Optional
 
 from ..llm import LLMClient
 from ..llm.prompts.match import MATCH_SYSTEM, MATCH_USER
-from ..schemas import JDProfile, MaterialsLibrary
+from ..schemas import MaterialsLibrary
 
 logger = logging.getLogger("resume_tailor.match")
 
@@ -32,14 +32,15 @@ def _background(lib: MaterialsLibrary) -> str:
     return "\n".join(lines) or "(no background provided)"
 
 
-def score_match(jd: JDProfile, library: MaterialsLibrary,
+def score_match(jd_text: str, library: MaterialsLibrary,
                 client: Optional[LLMClient] = None) -> dict:
-    """Return {'score': int, 'summary': str, 'strengths': [...], 'gaps': [...]}."""
+    """Return {'score': int, 'summary': str, 'strengths': [...], 'gaps': [...]}.
+
+    Scores directly from the raw JD text, so it works standalone (no separate
+    JD-analysis step required).
+    """
     user = MATCH_USER.format(
-        job_title=jd.job_title or "the role",
-        company=jd.company or "the company",
-        responsibilities="; ".join(jd.key_responsibilities) or "(not specified)",
-        skills=", ".join(jd.key_skills) or "(not specified)",
+        jd=(jd_text or "").strip()[:4000] or "(no job description provided)",
         background=_background(library),
     )
     client = client or LLMClient()

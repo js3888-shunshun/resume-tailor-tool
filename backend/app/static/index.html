@@ -313,6 +313,11 @@
             <input id="targetProj" type="number" min="0" max="15" value="2"
                    style="width:58px; background:#fff; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px;" />
           </div>
+          <div class="row" style="margin-top:4px;">
+            <button class="mini" id="matchBtn">Match score</button>
+            <span class="hint" id="match-hint">Score your library against this JD — no need to Analyze first (one AI call).</span>
+          </div>
+          <div id="match-result" style="display:none; margin-top:12px;"></div>
           <div class="error" id="error"></div>
         </div>
 
@@ -328,11 +333,6 @@
             <div><p class="field-title">Key skills</p><div class="chips" id="r-skills"></div></div>
             <div><p class="field-title">Key responsibilities</p><ul class="resp" id="r-resp"></ul></div>
           </div>
-          <div class="final-bar">
-            <button class="mini" id="matchBtn">Match score</button>
-            <span class="hint" id="match-hint">How well your library fits this JD (uses one AI call).</span>
-          </div>
-          <div id="match-result" style="display:none; margin-top:12px;"></div>
           <details class="raw"><summary class="muted">Raw JSON</summary><pre id="r-raw"></pre></details>
         </div>
 
@@ -733,9 +733,6 @@ versions in production is required. Fast-paced startup environment.`;
       renderChips($('r-skills'), p.key_skills, 'skill');
       const ul = $('r-resp'); ul.innerHTML = ''; (p.key_responsibilities || []).forEach((t) => ul.appendChild(h('li', {}, t)));
       $('r-raw').textContent = JSON.stringify(p, null, 2); $('result').style.display = 'block';
-      // Reset any previous match score when a new JD is analyzed.
-      $('match-result').style.display = 'none'; $('match-result').innerHTML = '';
-      $('match-hint').textContent = 'How well your library fits this JD (uses one AI call).';
     }
     let MATERIALS_MAP = {};
     function buildMaterialsMap() {
@@ -1121,11 +1118,12 @@ versions in production is required. Fast-paced startup environment.`;
       finally { btn.disabled = false; btn.textContent = old; }
     }
     async function computeMatch() {
-      if (!LAST_PROFILE) { $('match-hint').textContent = 'Run Analyze first.'; return; }
+      const jd = $('jd').value.trim();
+      if (!jd) { $('match-hint').textContent = 'Paste a job description above first.'; return; }
       if (!LIBRARY) { $('match-hint').textContent = 'Add your resume in Material Library first.'; return; }
       const btn = $('matchBtn'); btn.disabled = true; const old = btn.textContent; btn.innerHTML = '<span class="spinner"></span> Scoring…';
       try {
-        const r = await fetch('/match', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jd_profile: LAST_PROFILE, library: LIBRARY }) });
+        const r = await fetch('/match', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jd_text: jd, library: LIBRARY }) });
         const data = await r.json();
         if (!r.ok) { $('match-hint').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         const color = data.score >= 80 ? '#15803d' : data.score >= 60 ? '#3aa0f7' : data.score >= 40 ? '#b45309' : '#dc2626';
