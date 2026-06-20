@@ -7,26 +7,30 @@
   <style>
     /* ===== Claymorphism theme: bright colors, chunky rounded clay shadows ===== */
     :root {
-      --bg: #e4ecf8; --panel: #f2f7ff; --panel-2: #dceaf9; --border: #ccdcf2;
-      --text: #36476b; --muted: #818db5;
-      --accent: #54a8f6; --accent-dk: #2f8be9; --accent-soft: #e1f0fe; --accent-bd: #b8dcfb;
-      --pink: #f472b6; --pink-dk: #db2777; --pink-soft: #fde3f0; --yellow: #fbbf24; --green: #34d399; --blue: #5b9cf8;
+      --bg: #e9f1ff; --panel: #f5faff; --panel-2: #e4f0ff; --border: #d2e6fb;
+      --text: #3c4a6b; --muted: #8893b8;
+      --accent: #62b6ff; --accent-dk: #3aa0f7; --accent-soft: #e6f4ff; --accent-bd: #c4e4ff;
+      --purple: #b08cf8; --purple-dk: #8b5cf6;
+      --pink: #fa83c4; --pink-dk: #e0408f; --pink-soft: #ffe7f4; --yellow: #f9b938; --green: #2ecf94; --blue: #62b6ff;
       --hl: #b06a0c; --hl-bg: #fef0d2; --hl-bd: #f6d99a;
       --ok: #16a35a; --err: #ef476f; --teal: #14b3b3; --teal-soft: #d6f5f5;
       --radius: 24px;
-      --clay: 9px 9px 20px rgba(148,164,214,.5), -7px -7px 18px rgba(255,255,255,.92);
-      --clay-sm: 5px 5px 12px rgba(148,164,214,.45), -4px -4px 10px rgba(255,255,255,.9);
-      --clay-in: inset 4px 4px 9px rgba(148,164,214,.5), inset -4px -4px 9px rgba(255,255,255,.92);
-      --clay-accent: 0 8px 16px rgba(47,139,233,.42), inset 0 2px 6px rgba(255,255,255,.45), inset 0 -3px 8px rgba(0,0,0,.13);
+      --clay: 8px 8px 18px rgba(124,150,205,.38), -7px -7px 16px rgba(255,255,255,.85);
+      --clay-sm: 4px 4px 10px rgba(124,150,205,.32), -3px -3px 8px rgba(255,255,255,.85);
+      --clay-in: inset 4px 4px 9px rgba(124,150,205,.38), inset -4px -4px 9px rgba(255,255,255,.9);
+      --clay-accent: 0 8px 18px rgba(58,160,247,.45), inset 0 2px 6px rgba(255,255,255,.55), inset 0 -3px 8px rgba(0,0,0,.1);
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.55; }
-    input, textarea, button, select { font-family: inherit; }
+    body { margin: 0; background-color: var(--bg);
+      background: linear-gradient(135deg, #dcefff 0%, #eae2ff 32%, #ffe4f2 64%, #fff5dc 100%) fixed;
+      color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.55; }
+    button, select { font-family: inherit; }
+    /* User-facing text fields use a serif (Times New Roman) per request. */
+    textarea, input[type=text], input[type=number], .edit { font-family: "Times New Roman", Times, serif; }
     ::selection { background: var(--accent-soft); }
 
     .app { display: flex; min-height: 100vh; }
-    .sidebar { width: 222px; flex: 0 0 222px; background: var(--bg);
+    .sidebar { width: 222px; flex: 0 0 222px; background: transparent;
       padding: 26px 18px; display: flex; flex-direction: column; gap: 9px; position: sticky; top: 0; height: 100vh; }
     .brand { font-size: 17px; font-weight: 800; margin-bottom: 20px; color: var(--text); letter-spacing: -.01em; }
     .brand small { display:block; font-weight:500; color:var(--muted); font-size:11px; margin-top:3px; }
@@ -42,12 +46,13 @@
     .dot.ok { background: var(--green); } .dot.bad { background: var(--err); }
     .main { flex: 1; min-width: 0; padding: 30px 34px 90px; max-width: 920px; }
 
-    .card { background: var(--panel); border: 0; border-radius: var(--radius); padding: 22px;
+    .card { background: rgba(255,255,255,.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,.55); border-radius: var(--radius); padding: 22px;
       margin-bottom: 22px; box-shadow: var(--clay); transition: box-shadow .2s ease; }
     label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
     textarea { width: 100%; min-height: 110px; resize: vertical; background: var(--bg);
       color: var(--text); border: 0; border-radius: 16px; padding: 13px 15px;
-      font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px;
+      font-family: "Times New Roman", Times, serif; font-size: 15px;
       box-shadow: var(--clay-in); transition: box-shadow .16s ease; }
     textarea:focus, .edit:focus, input:focus, select:focus { outline: none; box-shadow: var(--clay-in), 0 0 0 3px var(--accent-soft); }
     #jd { min-height: 200px; }
@@ -91,8 +96,8 @@
     .lv { margin-top: 8px; }
     .lv-name { font-size: 18px; font-weight: 700; }
     .lv-contact { color: var(--muted); font-size: 12px; margin-top: 2px; }
-    .lv-sec { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-      color: var(--accent); margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+    .lv-sec { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--purple-dk); margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
     .lv-entry { border: 0; border-radius: 16px; padding: 12px 15px; margin-bottom: 10px; background: var(--panel); box-shadow: var(--clay-sm); }
     .lv-entry-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
     .lv-title { font-weight: 600; font-size: 14px; }
@@ -116,7 +121,7 @@
     .warn { color:var(--hl); font-weight:700; } .okk { color:var(--ok); font-weight:700; }
     .sec { margin-bottom:20px; }
     .sec-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:5px; }
-    .sec-title { font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent); font-weight:700; }
+    .sec-title { font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--purple-dk); font-weight:800; }
     .item { border:0; border-radius:16px; padding:12px 14px; margin-bottom:11px; background:var(--panel); box-shadow: var(--clay-sm); }
     .item-head { display:flex; gap:8px; align-items:center; justify-content:space-between; margin-bottom:8px; }
     .pi-grid, .item-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
@@ -124,7 +129,7 @@
     .f { display:flex; flex-direction:column; gap:3px; }
     label.inl { font-size:11px; color:var(--muted); margin:0; }
     .edit { width:100%; background:var(--bg); color:var(--text); border:0;
-      border-radius:11px; padding:8px 11px; font-size:13px; font-family:inherit; box-shadow: var(--clay-in); }
+      border-radius:11px; padding:8px 11px; font-size:14px; font-family:"Times New Roman", Times, serif; box-shadow: var(--clay-in); }
     textarea.edit { min-height:46px; resize:vertical; }
     .mini { background:var(--panel); border:0; color:var(--text); border-radius:12px;
       padding:7px 14px; font-size:12px; font-weight:700; cursor:pointer; box-shadow: var(--clay-sm);
@@ -215,23 +220,11 @@
       <!-- ============ TAB: LIBRARY ============ -->
       <section class="tab-panel" id="tab-library">
         <div class="card">
-          <label>Build / update your material library</label>
-          <div class="hint" style="margin-bottom:10px;">
-            Parse your resume <b>PDF</b> to create the initial library. To add a new
-            experience later, paste its text and <b>Parse &amp; append</b> — it merges
-            into your current library (only new items/bullets are added).
-          </div>
+          <label>Material library</label>
           <input type="file" id="resumeFile" accept=".pdf,.txt,.tex,.md,.text" style="font-size:13px;" />
           <div class="row">
-            <button id="parseReplaceBtn">Parse PDF &rarr; new library</button>
-          </div>
-          <div style="margin-top:14px;">
-            <label>Add a new experience / section (paste text)</label>
-            <textarea id="resumeText" placeholder="Paste a new role, project, or resume section to add…"></textarea>
-            <div class="row">
-              <button class="secondary" id="parseAppendBtn">Parse &amp; append</button>
-              <span class="hint" id="lib-hint"></span>
-            </div>
+            <button id="parseReplaceBtn">Parse PDF</button>
+            <span class="hint" id="lib-hint"></span>
           </div>
           <div class="error" id="lib-error"></div>
         </div>
@@ -286,39 +279,35 @@
 
         <div class="card" id="selection" style="display:none;">
           <div class="row" style="justify-content:space-between; margin:0 0 6px;">
-            <p class="field-title" style="margin:0;">Selected experiences (Step 3)</p>
+            <p class="field-title" style="margin:0;">Selected experiences</p>
             <span class="muted" id="sel-summary" style="font-size:12px;"></span>
           </div>
-          <div class="hint" style="margin-bottom:10px;">Whole experiences ranked by <b>category fit + keyword breadth</b> (hover the score for the split). "why" shows which JD categories &amp; keywords it matched. You can <b>remove</b> any pick or <b>add</b> another from your library.</div>
           <div id="sel-body"></div>
           <div class="cta" id="polish-cta">
-            <div><b>Step 4 — Polish to the JD</b>
-              <div class="hint">Rewrite the bullets above to match the JD — truthful, keyword-aware, similar length.</div></div>
-            <button id="polishBtn">Polish to JD &rarr;</button>
+            <div><b>Polish to the JD</b></div>
+            <button id="polishBtn">Polish to JD</button>
           </div>
           <details class="raw"><summary class="muted">Raw JSON</summary><pre id="sel-raw"></pre></details>
         </div>
 
         <div class="card" id="rewrite" style="display:none;">
           <div class="row" style="justify-content:space-between; margin:0 0 6px;">
-            <p class="field-title" style="margin:0;">Polished bullets (Step 4)</p>
+            <p class="field-title" style="margin:0;">Polished bullets</p>
             <div style="display:flex; gap:10px; align-items:center;">
               <span class="muted" id="rw-summary" style="font-size:12px;"></span>
               <button class="mini" id="rwToggleBtn">Edit</button>
             </div>
           </div>
-          <div class="hint" style="margin-bottom:10px;">Left = your original, right = JD-tailored (expanded bullets, JD keywords, realistic figures). <b>Preview</b> shows the result; click <b>Edit</b> to revise or delete any bullet. <b>Review for accuracy</b> — it may add plausible numbers you should confirm.</div>
           <div id="rw-body"></div>
           <div class="final-bar">
             <button id="finalizeBtn">Finalize draft</button>
-            <span class="hint" id="final-hint">Edit the "after" bullets, then finalize. This becomes the draft for the PDF (next step).</span>
+            <span class="hint" id="final-hint"></span>
           </div>
           <details class="raw"><summary class="muted">Raw JSON (current draft)</summary><pre id="rw-raw"></pre></details>
         </div>
 
         <div class="card" id="render" style="display:none;">
-          <p class="field-title" style="margin:0 0 6px;">Resume document (Steps 5–6)</p>
-          <div class="hint" style="margin-bottom:10px;">Renders your finalized draft into a LaTeX resume in your template's style and compiles it to PDF. Matched JD keywords are set <b>bold</b> for ATS. With <b>fit to one page</b> on, the spacing is auto-tuned to land on exactly one page — loosened to fill a sparse page, tightened to fit a full one.</div>
+          <p class="field-title" style="margin:0 0 10px;">Resume</p>
           <div class="final-bar">
             <button id="genBtn">Generate &amp; preview PDF</button>
             <label class="hint" style="display:flex; gap:5px; align-items:center; cursor:pointer;"><input type="checkbox" id="hlToggle" checked> bold JD keywords</label>
@@ -337,11 +326,10 @@
       <!-- ============ TAB: COVER LETTER ============ -->
       <section class="tab-panel" id="tab-cover" hidden>
         <div class="card" id="cover">
-          <p class="field-title" style="margin:0 0 6px;">Cover letter (Step 7)</p>
-          <div class="hint" style="margin-bottom:10px;">Writes a one-page, four-paragraph cover letter in your voice (Intro · Why this company · Why you · Thank you), grounded in your real background and this role. Plain and sincere on purpose: no em dashes, no parentheses, none of the usual AI filler. Run <b>Analyze &amp; Select</b> in the Tailor tab first; finalizing your draft there makes the letter use your tailored bullets.</div>
+          <p class="field-title" style="margin:0 0 10px;">Cover letter</p>
           <div style="margin-bottom:10px;">
-            <label class="hint" style="display:block; margin-bottom:4px;">Why this company — your research (a project/value you admire, anyone you've spoken with). This powers the most important paragraph; leave blank and it stays grounded in the JD.</label>
-            <textarea id="coverNotes" rows="3" placeholder="e.g. Spoke with Jane Li (MLE) about the retrieval platform team; I like that you ship eval harnesses before models…" style="width:100%; box-sizing:border-box;"></textarea>
+            <label style="display:block; margin-bottom:4px;">Why this company (optional)</label>
+            <textarea id="coverNotes" rows="3" placeholder="" style="width:100%; box-sizing:border-box;"></textarea>
             <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
               <input id="coverRecruiter" type="text" placeholder="Recruiter name (optional)" style="flex:1; min-width:160px;">
               <input id="coverAddress" type="text" placeholder="Company office address (optional)" style="flex:2; min-width:200px;">
@@ -363,9 +351,8 @@
       <!-- ============ TAB: ONE-CLICK ============ -->
       <section class="tab-panel" id="tab-generate" hidden>
         <div class="card">
-          <p class="field-title" style="margin:0 0 6px;">One-click generate (Step 8)</p>
-          <div class="hint" style="margin-bottom:10px;">Paste a job description and get a tailored one-page resume and a cover letter in one go. This runs the whole pipeline for you: analyze the JD, pick your most relevant experiences, rewrite them to the role, render the resume, and write the letter. You can still fine-tune anything afterwards in the Tailor and Cover Letter tabs.</div>
-          <textarea id="gen-jd" rows="7" placeholder="Paste the job description here…" style="width:100%; box-sizing:border-box;"></textarea>
+          <p class="field-title" style="margin:0 0 10px;">One-click generate</p>
+          <textarea id="gen-jd" rows="7" placeholder="Paste the job description…" style="width:100%; box-sizing:border-box;"></textarea>
           <div class="final-bar" style="margin-top:8px; flex-wrap:wrap;">
             <label class="hint">experiences <input id="gen-exp" type="number" value="3" min="0" max="15" style="width:54px;"></label>
             <label class="hint">projects <input id="gen-proj" type="number" value="1" min="0" max="15" style="width:54px;"></label>
@@ -375,7 +362,7 @@
           </div>
           <details class="raw" style="margin-top:8px;"><summary class="muted">Cover letter personalization (optional)</summary>
             <div style="margin-top:8px;">
-              <textarea id="gen-notes" rows="3" placeholder="Why this company — your research, a project/value you admire, anyone you've spoken with…" style="width:100%; box-sizing:border-box;"></textarea>
+              <textarea id="gen-notes" rows="3" placeholder="Why this company (optional)" style="width:100%; box-sizing:border-box;"></textarea>
               <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
                 <input id="gen-recruiter" type="text" placeholder="Recruiter name (optional)" style="flex:1; min-width:160px;">
                 <input id="gen-address" type="text" placeholder="Company office address (optional)" style="flex:2; min-width:200px;">
@@ -616,27 +603,21 @@ versions in production is required. Fast-paced startup environment.`;
       (lib.experiences || []).forEach((e, i) => { e.id = `exp_${pad(i + 1)}`; (e.bullets || []).forEach((b) => { bn++; b.id = `bullet_${pad(bn)}`; }); });
       (lib.projects || []).forEach((p, i) => { p.id = `proj_${pad(i + 1)}`; (p.bullets || []).forEach((b) => { bn++; b.id = `bullet_${pad(bn)}`; }); });
     }
-    async function parseResume(mode) {
+    async function parseResume() {
       $('lib-error').textContent = '';
       const file = $('resumeFile').files[0];
-      const text = $('resumeText').value.trim();
-      if (mode === 'replace' && !file && !text) { $('lib-error').textContent = 'Choose a resume file (or paste text) first.'; return; }
-      if (mode === 'append' && !text && !file) { $('lib-error').textContent = 'Paste the new experience text to append.'; return; }
-      const btn = mode === 'replace' ? $('parseReplaceBtn') : $('parseAppendBtn');
+      if (!file) { $('lib-error').textContent = 'Choose a resume PDF first.'; return; }
+      const btn = $('parseReplaceBtn');
       const label = btn.textContent; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Parsing…';
       try {
         const fd = new FormData();
-        if (file && (mode === 'replace' || !text)) fd.append('file', file);
-        if (text) fd.append('resume_text', text);
-        fd.append('mode', mode);
-        // Append into the CURRENT in-memory library so consecutive appends accumulate.
-        if (mode === 'append' && LIBRARY) fd.append('base_library', JSON.stringify(LIBRARY));
+        fd.append('file', file);
+        fd.append('mode', 'replace');
         const r = await fetch('/materials/ingest', { method: 'POST', body: fd });
         const data = await r.json();
         if (!r.ok) { $('lib-error').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         LIBRARY = data; LIB_VIEW = 'compact'; renderLibrary();
-        $('lib-hint').textContent = mode === 'append' ? 'Appended — review & Save.' : 'Parsed — review & Save.';
-        if (mode === 'append') $('resumeText').value = '';
+        $('lib-hint').textContent = 'Parsed — review & Save.';
       } catch (e) { $('lib-error').textContent = 'Request failed: ' + e.message; }
       finally { btn.disabled = false; btn.textContent = label; }
     }
@@ -1062,8 +1043,7 @@ versions in production is required. Fast-paced startup environment.`;
       finally { btn.disabled = false; btn.textContent = 'Analyze & Select'; }
     }
 
-    $('parseReplaceBtn').addEventListener('click', () => parseResume('replace'));
-    $('parseAppendBtn').addEventListener('click', () => parseResume('append'));
+    $('parseReplaceBtn').addEventListener('click', () => parseResume());
     $('saveLibBtn').addEventListener('click', saveLibrary);
     $('toggleViewBtn').addEventListener('click', () => { LIB_VIEW = LIB_VIEW === 'compact' ? 'edit' : 'compact'; renderLibrary(); });
     $('analyzeBtn').addEventListener('click', analyze);
