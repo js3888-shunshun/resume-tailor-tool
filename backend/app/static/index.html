@@ -1050,6 +1050,7 @@ versions in production is required. Fast-paced startup environment.`;
         const data = await r.json();
         if (!r.ok) { $('gen-hint').textContent = `Error ${r.status}: ${data.detail || JSON.stringify(data)}`; return; }
         LAST_PROFILE = data.profile;  // powers download names; lets the other tabs reuse it
+        $('gen-jd').value = '';  // clear the JD box once it's been generated
         const nexp = (data.selected_experiences || []).length, nproj = (data.selected_projects || []).length;
         $('gen-summary').innerHTML = `<b>${data.profile.job_title} @ ${data.profile.company}</b> — picked ${nexp} experience(s), ${nproj} project(s), ${(data.skill_groups || []).length} skill group(s).`;
         $('gen-results').style.display = 'grid';
@@ -1121,6 +1122,25 @@ versions in production is required. Fast-paced startup environment.`;
     $('gen-btn').addEventListener('click', generateAll);
     $('rwToggleBtn').addEventListener('click', () => { if (!REWRITE_DRAFT) return; RW_VIEW = RW_VIEW === 'edit' ? 'preview' : 'edit'; renderRewrite(REWRITE_DRAFT); });
     $('sampleBtn').addEventListener('click', () => { $('jd').value = SAMPLE_JD; });
+
+    // Long-press (~0.5s) on any text field selects all its text, like long-press
+    // in a document. Quick clicks and drag-to-select still work normally.
+    (function () {
+      let timer = null;
+      const isField = (el) => el && (el.tagName === 'TEXTAREA' ||
+        (el.tagName === 'INPUT' && /^(text|search|password|)$/.test(el.type)) ||
+        (el.classList && el.classList.contains('edit')));
+      const start = (e) => {
+        const el = e.target;
+        if (!isField(el)) return;
+        timer = setTimeout(() => { try { el.focus(); el.select(); } catch (_) {} }, 500);
+      };
+      const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+      document.addEventListener('mousedown', start, true);
+      document.addEventListener('touchstart', start, { capture: true, passive: true });
+      ['mouseup', 'mousemove', 'mouseleave', 'touchend', 'touchmove', 'scroll', 'wheel']
+        .forEach((ev) => document.addEventListener(ev, cancel, true));
+    })();
 
     // ===== login + boot =====
     async function doLogin() {
