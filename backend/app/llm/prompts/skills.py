@@ -18,23 +18,26 @@ How to tailor:
   split it into two groups instead of overflowing.
 - ORDER groups most-JD-relevant first; within each group, order skills
   most-JD-relevant first so the JD's key skills lead.
-- PRIORITIZE and TRIM: surface the JD's key skills wherever the candidate has them;
-  drop skills that are clearly irrelevant to this JD so the section stays compact
-  (a one-page resume). Keep roughly 16-26 skills total across all groups.
-- TRUTHFUL: only use skills the candidate actually lists. You MAY normalize names
-  (e.g. "scikit-learn") and split/merge groups, but do NOT invent a skill the
-  candidate's inventory gives no basis for.
+- FILL FROM THE JD: the section MUST speak the JD's language for the ATS. INCLUDE
+  the JD's key skills and highlight keywords in the right groups EVEN IF they are
+  not in the candidate's inventory, as long as they are plausible for someone in
+  this candidate's field who could reasonably have or quickly pick them up. Lead
+  each group with the JD's skills. This is the main goal: make the tailored skills
+  clearly reflect THIS JD, so different JDs produce visibly different skill sets.
+- STAY PLAUSIBLE: do not add skills from a clearly unrelated domain, or that
+  contradict the candidate's level/field. Keep the candidate's existing relevant
+  skills too; drop only the ones clearly irrelevant to this JD. Keep roughly 16-26
+  skills total across all groups. You MAY normalize names (e.g. "scikit-learn").
 
 Output rules (STRICT):
 - Reply with ONLY a JSON array, no prose, no code fences.
 - One element per group, in display order:
     {"label": str, "skills": [str, ...]}
-- Every skill string must come from (or be a normalization of) the provided
-  inventory. No empty groups."""
+- No empty groups."""
 
 SKILLS_USER = """Target role: {job_title} at {company}
-JD key skills (surface these where the candidate has them): {skills}
-JD highlight keywords: {highlight}
+JD key skills (INCLUDE these, even if not already in the inventory): {skills}
+JD highlight keywords (work these in too): {highlight}
 JD primary category: {primary}; secondary: {secondary}
 
 Candidate skill inventory (JSON: name + category hints):
